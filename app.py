@@ -21,6 +21,8 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from apscheduler.schedulers.background import BackgroundScheduler
 import atexit
 from io import BytesIO
+import os
+import json
 
 
 
@@ -55,7 +57,10 @@ def get_gspread_client():
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive"
     ]
-    creds = Credentials.from_service_account_file("credenciais.json", scopes=scope)
+    cred_json = os.environ.get("GOOGLE_CREDENTIALS")
+    cred_dict = json.loads(cred_json)
+
+    creds = Credentials.from_service_account_info(cred_dict)
     return gspread.authorize(creds)
 
 def extrair_sheet_e_gid(url):
