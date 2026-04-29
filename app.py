@@ -39,7 +39,6 @@ app.config['MAIL_USERNAME']       = 'notificacoes.sistema@edusjc.sp.gov.br'
 app.config['MAIL_PASSWORD']       = 'ubvw axxm azyt kgka'
 app.config['MAIL_DEFAULT_SENDER'] = ('Sistema CITE', 'notificacoes.sistema@edusjc.sp.gov.br')
 
-mail = Mail(app)
 
 FUNCIONARIOS_URL = "https://docs.google.com/spreadsheets/d/1nYgCV6SgPf5PTIIJZLQcM9xfw5L08SNber7ZEDfUWOo/export?format=csv"
 
