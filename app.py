@@ -2834,6 +2834,19 @@ def relatorios():
 @app.route('/favicon.ico')
 def favicon():
     return send_from_directory('static', 'favicon.ico')
+
+@app.route("/debug/sgrh")
+def debug_sgrh():
+    try:
+        client = get_gspread_client()
+        cred_json = os.environ.get("GOOGLE_CREDENTIALS")
+        cred_dict = json.loads(cred_json)
+        return jsonify({
+            "client_email": cred_dict.get("client_email"),
+            "ok": True
+        })
+    except Exception as e:
+        return jsonify({"erro": str(e)})   
 # =========================
 # 🚪 LOGOUT
 # =========================
