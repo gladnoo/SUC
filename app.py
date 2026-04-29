@@ -2024,16 +2024,20 @@ def ramais_deletar(id):
 def enviar_email(destinatario, assunto, corpo_html):
     def _enviar():
         try:
-            msg = MIMEMultipart("alternative")
-            msg["Subject"] = assunto
-            msg["From"]    = "Sistema CITE <notificacoes.sistema@edusjc.sp.gov.br>"
-            msg["To"]      = destinatario
-            msg.attach(MIMEText(corpo_html, "html"))
-
-            with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-                smtp.login("notificacoes.sistema@edusjc.sp.gov.br", "ubvw axxm azyt kgka")
-                smtp.sendmail("notificacoes.sistema@edusjc.sp.gov.br", destinatario, msg.as_string())
-                print(f"✉️ Email enviado para {destinatario}")
+            response = requests.post(
+                "https://api.sendgrid.com/v3/mail/send",
+                headers={
+                    "Authorization": f"Bearer {os.environ.get('SENDGRID_API_KEY')}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "personalizations": [{"to": [{"email": destinatario}]}],
+                    "from": {"email": "notificacoes.sistema@edusjc.sp.gov.br", "name": "Sistema CITE"},
+                    "subject": assunto,
+                    "content": [{"type": "text/html", "value": corpo_html}]
+                }
+            )
+            print(f"✉️ SendGrid response: {response.status_code} — {response.text}")
         except Exception as e:
             print(f"⚠️ Falha ao enviar email: {e}")
 
@@ -2041,6 +2045,7 @@ def enviar_email(destinatario, assunto, corpo_html):
     thread.daemon = True
     thread.start()
 
+#recovery code sendgrid: PNB6XTZ2B3HCFCFWFQW1VH4D
 
 def template_email(titulo, subtitulo, corpo, cor_destaque="#6366f1"):
     return f"""
