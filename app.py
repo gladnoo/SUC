@@ -2034,7 +2034,7 @@ def enviar_email(destinatario, assunto, corpo_html):
                     "html": corpo_html
                 }
             )
-            print(f"✉️ Email enviado para {destinatario}: {response.status_code}")
+            print(f"✉️ Resend response: {response.status_code} — {response.text}")
         except Exception as e:
             print(f"⚠️ Falha ao enviar email: {e}")
 
