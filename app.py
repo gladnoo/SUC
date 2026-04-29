@@ -25,6 +25,9 @@ import json
 import threading
 import psycopg2
 import psycopg2.extras
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 
 
@@ -2021,20 +2024,16 @@ def ramais_deletar(id):
 def enviar_email(destinatario, assunto, corpo_html):
     def _enviar():
         try:
-            response = requests.post(
-                "https://api.resend.com/emails",
-                headers={
-                    "Authorization": f"Bearer {os.environ.get('RESEND_API_KEY')}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "from": "Sistema CITE <onboarding@resend.dev>",
-                    "to": [destinatario],
-                    "subject": assunto,
-                    "html": corpo_html
-                }
-            )
-            print(f"✉️ Resend response: {response.status_code} — {response.text}")
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = assunto
+            msg["From"]    = "Sistema CITE <notificacoes.sistema@edusjc.sp.gov.br>"
+            msg["To"]      = destinatario
+            msg.attach(MIMEText(corpo_html, "html"))
+
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+                smtp.login("notificacoes.sistema@edusjc.sp.gov.br", "ubvw axxm azyt kgka")
+                smtp.sendmail("notificacoes.sistema@edusjc.sp.gov.br", destinatario, msg.as_string())
+                print(f"✉️ Email enviado para {destinatario}")
         except Exception as e:
             print(f"⚠️ Falha ao enviar email: {e}")
 
