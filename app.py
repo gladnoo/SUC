@@ -33,8 +33,9 @@ app = Flask(__name__)
 app.secret_key = "segredo123"
 
 app.config['MAIL_SERVER']         = 'smtp.gmail.com'
-app.config['MAIL_PORT']           = 587
-app.config['MAIL_USE_TLS']        = True
+app.config['MAIL_PORT']           = 465
+app.config['MAIL_USE_TLS']        = False
+app.config['MAIL_USE_SSL']        = True
 app.config['MAIL_USERNAME']       = 'notificacoes.sistema@edusjc.sp.gov.br'
 app.config['MAIL_PASSWORD']       = 'ubvw axxm azyt kgka'
 app.config['MAIL_DEFAULT_SENDER'] = ('Sistema CITE', 'notificacoes.sistema@edusjc.sp.gov.br')
