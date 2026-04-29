@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Interno</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg: #f1f5f9;
+            --column-bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --danger: #ef4444;
+            --danger-bg: #fee2e2;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --sidebar-w: 260px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background: var(--bg); color: var(--text-main); line-height: 1.5; padding-bottom: 120px; }
+
+        /* ======================== SIDEBAR ======================== */
+        .sidebar-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(15,23,42,0.45); backdrop-filter: blur(2px);
+            z-index: 200;
+        }
+        .sidebar-overlay.open { display: block; }
+
+        .sidebar {
+            position: fixed; top: 0; left: calc(-1 * var(--sidebar-w) - 10px);
+            width: var(--sidebar-w); height: 100vh;
+            background: white; z-index: 201;
+            box-shadow: 4px 0 24px rgba(0,0,0,0.12);
+            transition: left 0.3s cubic-bezier(0.4,0,0.2,1);
+            display: flex; flex-direction: column;
+            border-right: 1px solid var(--border);
+            overflow: hidden;
+        }
+        .sidebar.open { left: 0; }
+
+        .sidebar-head {
+            padding: 20px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .sidebar-logo { display: flex; align-items: center; gap: 10px; }
+        .sidebar-logo .logo-icon { width: 34px; height: 34px; font-size: 1rem; border-radius: 8px; }
+        .sidebar-logo span { font-weight: 700; font-size: 0.95rem; color: var(--text-main); }
+        .btn-close-sidebar {
+            background: var(--bg); border: 1px solid var(--border);
+            width: 30px; height: 30px; border-radius: 8px; cursor: pointer;
+            font-size: 1rem; display: flex; align-items: center; justify-content: center;
+            color: var(--text-muted); transition: 0.2s;
+        }
+        .btn-close-sidebar:hover { background: var(--danger-bg); color: var(--danger); }
+
+        .sidebar-nav { flex: 1; overflow-y: auto; padding: 12px 0; }
+        .sidebar-section-label {
+            font-size: 0.65rem; font-weight: 700; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 1px;
+            padding: 12px 20px 6px;
+        }
+        .sidebar-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 20px; text-decoration: none;
+            color: var(--text-main); font-size: 0.88rem; font-weight: 600;
+            transition: 0.15s; cursor: pointer; border: none; background: none;
+            width: 100%; text-align: left; position: relative;
+        }
+        .sidebar-item:hover { background: #f0f4ff; color: var(--primary); }
+        .sidebar-item.ativo { background: #eef2ff; color: var(--primary); }
+        .sidebar-item .si-icon { font-size: 1.1rem; width: 22px; text-align: center; }
+        .sidebar-item .si-badge {
+            margin-left: auto; background: var(--danger); color: white;
+            font-size: 0.6rem; font-weight: 700; padding: 2px 6px;
+            border-radius: 20px; min-width: 18px; text-align: center;
+            display: none;
+        }
+        .sidebar-item .si-badge.visible { display: block; }
+        .sidebar-divider { height: 1px; background: var(--border); margin: 8px 20px; }
+
+        .sidebar-footer {
+            padding: 16px 20px; border-top: 1px solid var(--border);
+            display: flex; align-items: center; gap: 10px;
+        }
+        .sidebar-footer .avatar-sm {
+            width: 34px; height: 34px; background: #eef2ff; color: var(--primary);
+            border: 2px solid var(--primary); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem;
+        }
+        .sidebar-footer-info { flex: 1; }
+        .sidebar-footer-info b { font-size: 0.82rem; display: block; }
+        .sidebar-footer-info small { font-size: 0.7rem; color: var(--text-muted); }
+        .btn-logout-sidebar {
+            background: none; border: none; color: var(--text-muted);
+            cursor: pointer; font-size: 1rem; transition: 0.2s;
+        }
+        .btn-logout-sidebar:hover { color: var(--danger); }
+
+        /* ======================== NAVBAR ======================== */
+        header.navbar {
+            background: #ffffff; padding: 15px 40px; display: flex;
+            justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100;
+        }
+        .nav-left { display: flex; align-items: center; gap: 12px; }
+        .btn-menu {
+            background: var(--bg); border: 1.5px solid var(--border);
+            width: 38px; height: 38px; border-radius: 10px; cursor: pointer;
+            font-size: 1.1rem; display: flex; align-items: center; justify-content: center;
+            transition: 0.2s; color: var(--text-main);
+        }
+        .btn-menu:hover { background: #eef2ff; border-color: var(--primary); color: var(--primary); }
+        .logo-icon {
+            background: var(--primary); color: white; width: 40px; height: 40px;
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 1.2rem;
+        }
+        .nav-left h1 { font-size: 1.1rem; color: var(--text-main); margin: 0; }
+        .nav-left p { font-size: 0.85rem; color: var(--text-muted); margin: 0; }
+
+        .nav-center {
+            position: absolute; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 20px;
+        }
+        .nav-center a {
+            text-decoration: none; color: var(--text-main); font-size: 0.9rem;
+            font-weight: 600; display: flex; align-items: center; gap: 5px; cursor: pointer;
+        }
+        .nav-center a:hover { color: var(--primary); }
+
+        .nav-right { display: flex; align-items: center; gap: 12px; }
+        .user-profile { display: flex; align-items: center; gap: 12px; }
+        .user-info { display: flex; flex-direction: column; align-items: flex-end; }
+        .user-name { font-size: 0.9rem; font-weight: 600; }
+        .user-status { font-size: 0.75rem; color: var(--success); }
+        .avatar {
+            width: 40px; height: 40px; background: #eef2ff; color: var(--primary);
+            border: 2px solid var(--primary); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-weight: 700;
+        }
+        .badge-btn { position: relative; }
+        .notif-badge {
+            position: absolute; top: -5px; right: -5px; background: var(--danger); color: white;
+            font-size: 0.6rem; font-weight: 700; width: 16px; height: 16px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; border: 2px solid white;
+        }
+        .btn-new {
+            background: var(--primary); color: white; border: none; padding: 10px 20px;
+            border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+            display: flex; align-items: center; gap: 8px; position: relative; font-family: inherit;
+        }
+        .btn-new:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        .btn-outline {
+            background: white; color: var(--primary); border: 1.5px solid var(--primary);
+            padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer;
+            transition: all 0.2s; display: flex; align-items: center; gap: 6px; font-size: 0.85rem;
+            font-family: inherit;
+        }
+        .btn-outline:hover { background: #eef2ff; }
+
+        /* ======================== NOTIFICAÇÕES ======================== */
+        .notif-wrapper { position: relative; }
+        .notif-btn {
+            background: white; border: 1.5px solid var(--border);
+            width: 40px; height: 40px; border-radius: 10px;
+            cursor: pointer; font-size: 1.1rem; display: flex;
+            align-items: center; justify-content: center; transition: 0.2s;
+        }
+        .notif-btn:hover { background: var(--bg); }
+        .notif-count {
+            position: absolute; top: -5px; right: -5px; background: var(--danger); color: white;
+            font-size: 0.6rem; font-weight: 700; min-width: 16px; height: 16px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; border: 2px solid white; padding: 0 3px;
+        }
+        .notif-dropdown {
+            display: none; position: absolute; top: 48px; right: 0; width: 340px;
+            background: white; border: 1px solid var(--border); border-radius: 14px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.12); z-index: 999; overflow: hidden;
+        }
+        .notif-dropdown.open { display: block; }
+        .notif-drop-header {
+            padding: 14px 16px; border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .notif-drop-header h4 { font-size: 0.9rem; }
+        .notif-drop-actions { display: flex; gap: 8px; align-items: center; }
+        .btn-marcar-todas { background: none; border: none; color: var(--primary); font-size: 0.75rem; font-weight: 700; cursor: pointer; font-family: inherit; }
+        .btn-limpar-todas { background: none; border: none; color: var(--danger); font-size: 0.75rem; font-weight: 700; cursor: pointer; font-family: inherit; }
+        .notif-lista { max-height: 360px; overflow-y: auto; }
+        .notif-item {
+            display: flex; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--border);
+            cursor: pointer; transition: 0.15s; position: relative;
+        }
+        .notif-item:hover { background: var(--bg); }
+        .notif-item.nao-lida { background: #f0f4ff; }
+        .notif-item.nao-lida:hover { background: #e8eeff; }
+        .notif-icon { font-size: 1.3rem; flex-shrink: 0; margin-top: 2px; }
+        .notif-texto { flex: 1; }
+        .notif-texto p { font-size: 0.82rem; color: var(--text-main); line-height: 1.4; }
+        .notif-texto small { font-size: 0.7rem; color: var(--text-muted); }
+        .btn-del-notif { background: none; border: none; color: #cbd5e1; cursor: pointer; font-size: 0.85rem; transition: 0.2s; align-self: flex-start; padding: 2px; }
+        .btn-del-notif:hover { color: var(--danger); }
+        .notif-empty { padding: 30px; text-align: center; color: var(--text-muted); font-size: 0.85rem; }
+        .notif-ponto { width: 7px; height: 7px; background: var(--primary); border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
+
+        /* ======================== KANBAN ======================== */
+        .board { display: flex; gap: 20px; padding: 40px; max-width: 1100px; margin: 0 auto; align-items: flex-start; }
+        .column { flex: 1; min-width: 250px; background: var(--column-bg); padding: 16px; border-radius: 12px; border: 1px solid var(--border); min-height: 500px; }
+        .column h3 { font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+        .column h3::before { content: ''; width: 10px; height: 10px; border-radius: 50%; }
+        .column-todo h3::before { background: #ef4444; }
+        .column-doing h3::before { background: #f59e0b; }
+        .column-done h3::before { background: #22c55e; }
+        .card { background: var(--card-bg); padding: 14px; margin-bottom: 12px; border-radius: 10px; cursor: grab; border: 1px solid var(--border); box-shadow: var(--shadow); position: relative; transition: 0.2s; }
+        .card:hover { transform: translateY(-2px); }
+        .btn-delete { position: absolute; top: 12px; right: 12px; background: var(--danger-bg); color: var(--danger); border: none; width: 24px; height: 24px; border-radius: 6px; cursor: pointer; opacity: 0; display: flex; align-items: center; justify-content: center; }
+        .card:hover .btn-delete { opacity: 1; }
+
+        /* ======================== APPS ======================== */
+        .apps-section { max-width: 1100px; margin: 0 auto; padding: 20px 40px; border-top: 1px solid var(--border); }
+        .apps-grid { display: flex; gap: 25px; justify-content: flex-start; flex-wrap: wrap; }
+        .app-item-container { position: relative; }
+        .app-item { display: flex; flex-direction: column; align-items: center; text-decoration: none; transition: 0.2s; cursor: pointer; }
+        .app-item:hover { transform: translateY(-5px); }
+        .app-box { width: 60px; height: 60px; background: white; border-radius: 14px; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 8px; overflow: hidden; }
+        .app-box img { width: 32px; height: 32px; object-fit: contain; }
+        .app-item span { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
+        .btn-delete-app { position: absolute; top: -5px; right: -5px; background: var(--danger); color: white; border: none; width: 20px; height: 20px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; opacity: 0; border: 2px solid white; z-index: 5; }
+        .app-item-container:hover .btn-delete-app { opacity: 1; }
+        .btn-add-app .app-box { border: 2px dashed var(--border); background: #f8fafc; color: var(--text-muted); font-size: 1.5rem; }
+
+        /* ======================== COMUNICADOS ======================== */
+        .comunicados-section { max-width: 1100px; margin: 40px auto; padding: 0 40px; }
+        .comunicados-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .comunicados-grid { column-count: 3; column-gap: 20px; width: 100%; }
+        @media (max-width: 900px) { .comunicados-grid { column-count: 2; } }
+        @media (max-width: 600px) { .comunicados-grid { column-count: 1; } }
+        .comunicado-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--border); box-shadow: var(--shadow); position: relative; margin-bottom: 20px; break-inside: avoid; display: inline-block; width: 100%; }
+        .comunicado-card h4 { font-size: 0.95rem; margin-bottom: 8px; color: var(--text-main); }
+        .comunicado-card p { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px; white-space: pre-wrap; }
+        .comunicado-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 10px; }
+        .comunicado-author { font-size: 0.75rem; font-weight: 700; color: var(--primary); }
+        .comunicado-date { font-size: 0.7rem; color: var(--text-muted); }
+        .btn-delete-comunicado { background: var(--danger-bg); color: var(--danger); border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; font-weight: 600; }
+        .reacoes-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+        .reacao-btn { background: var(--bg); border: 1.5px solid var(--border); border-radius: 20px; padding: 3px 10px; cursor: pointer; font-size: 0.82rem; font-weight: 700; display: flex; align-items: center; gap: 4px; transition: 0.15s; font-family: inherit; }
+        .reacao-btn:hover { border-color: var(--primary); background: #eef2ff; }
+        .reacao-btn.ativa { border-color: var(--primary); background: #eef2ff; color: var(--primary); }
+        .reacao-btn .emoji { font-size: 1rem; }
+
+        /* ======================== CALENDÁRIO + ANIVERSARIANTES ======================== */
+        .cal-section { max-width: 1100px; margin: 40px auto; padding: 0 40px; display: grid; grid-template-columns: 1fr 320px; gap: 24px; }
+        @media (max-width: 900px) { .cal-section { grid-template-columns: 1fr; } }
+        .cal-box { background: white; border-radius: 16px; border: 1px solid var(--border); box-shadow: var(--shadow); overflow: hidden; }
+        .cal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid var(--border); }
+        .cal-nav { display: flex; gap: 8px; align-items: center; }
+        .cal-nav button { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; width: 32px; height: 32px; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .cal-nav button:hover { background: var(--primary); color: white; border-color: var(--primary); }
+        .cal-nav span { font-size: 0.9rem; font-weight: 700; min-width: 130px; text-align: center; }
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); padding: 16px; }
+        .cal-day-name { text-align: center; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; padding: 8px 0; }
+        .cal-day { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 10px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: 0.15s; position: relative; gap: 2px; }
+        .cal-day:hover { background: var(--bg); }
+        .cal-day.outro-mes { color: #cbd5e1; cursor: default; }
+        .cal-day.outro-mes:hover { background: transparent; }
+        .cal-day.hoje { background: var(--primary); color: white; }
+        .cal-day.hoje:hover { background: var(--primary-hover); }
+        .cal-day.tem-evento::after { content: ''; width: 5px; height: 5px; border-radius: 50%; background: #f59e0b; position: absolute; bottom: 4px; }
+        .cal-day.hoje.tem-evento::after { background: white; }
+        .cal-day.aniversario { outline: 2px solid #f97316; outline-offset: -2px; }
+        .eventos-lista { padding: 0 24px 20px; }
+        .evento-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.82rem; }
+        .evento-item:last-child { border-bottom: none; }
+        .evento-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .dot-evento { background: #6366f1; }
+        .dot-feriado { background: #ef4444; }
+        .dot-aniversario { background: #f97316; }
+        .evento-info { flex: 1; }
+        .evento-info b { display: block; }
+        .evento-info small { color: var(--text-muted); }
+        .btn-del-evento { background: none; border: none; color: #cbd5e1; cursor: pointer; font-size: 0.8rem; transition: 0.2s; }
+        .btn-del-evento:hover { color: var(--danger); }
+        .aniv-box { background: white; border-radius: 16px; border: 1px solid var(--border); box-shadow: var(--shadow); overflow: hidden; }
+        .aniv-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+        .aniv-header h2 { font-size: 1rem; font-weight: 700; }
+        .aniv-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; max-height: 380px; overflow-y: auto; }
+        .aniv-card { display: flex; align-items: center; gap: 12px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; padding: 10px 14px; }
+        .aniv-card.hoje-aniv { background: linear-gradient(135deg, #fff7ed, #fef3c7); border-color: #f97316; box-shadow: 0 0 0 2px #fed7aa; }
+        .aniv-emoji { font-size: 1.4rem; }
+        .aniv-info b { font-size: 0.85rem; display: block; }
+        .aniv-info small { font-size: 0.72rem; color: #92400e; }
+        .aniv-empty { padding: 30px 16px; text-align: center; color: var(--text-muted); font-size: 0.85rem; }
+
+        /* ======================== EQUIPE ======================== */
+        .equipe-section { max-width: 1100px; margin: 40px auto; padding: 0 40px; }
+        .user-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; }
+        .user-card { background: white; padding: 12px; border-radius: 12px; border: 1px solid var(--border); display: flex; align-items: center; gap: 12px; position: relative; }
+        .u-avatar { width: 38px; height: 38px; background: #f1f5f9; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--primary); font-size: 0.8rem; }
+        .u-info { display: flex; flex-direction: column; line-height: 1.2; }
+        .u-info b { font-size: 0.85rem; color: var(--text-main); }
+        .u-info small { font-size: 0.7rem; color: var(--text-muted); }
+        .u-status { width: 8px; height: 8px; border-radius: 50%; position: absolute; right: 12px; top: 12px; }
+        .u-online { background: var(--success); box-shadow: 0 0 6px var(--success); }
+        .u-offline { background: #cbd5e1; }
+        .u-ferias { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
+        .u-afastado { background: #ef4444; }
+
+        /* ======================== SOLICITAÇÕES ======================== */
+        .solic-section { max-width: 1100px; margin: 40px auto; padding: 0 40px; }
+        .solic-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .solic-table-wrap { background: white; border-radius: 16px; border: 1px solid var(--border); box-shadow: var(--shadow); overflow: hidden; }
+        .solic-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .solic-table thead tr { background: #f8fafc; border-bottom: 1px solid var(--border); }
+        .solic-table th { padding: 12px 16px; text-align: left; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; }
+        .solic-table td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        .solic-table tr:last-child td { border-bottom: none; }
+        .solic-table tr:hover td { background: #f8fafc; }
+        .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; }
+        .badge-pendente { background: #fef3c7; color: #92400e; }
+        .badge-aprovada { background: #dcfce7; color: #166534; }
+        .badge-recusada { background: #fee2e2; color: #991b1b; }
+        .solic-desc { max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-muted); }
+        .solic-empty { padding: 40px; text-align: center; color: var(--text-muted); font-size: 0.85rem; }
+        .solic-resposta { font-size: 0.75rem; color: #166534; background: #f0fdf4; border-left: 3px solid var(--success); padding: 6px 10px; border-radius: 4px; max-width: 240px; }
+        .solic-resposta.recusada { color: #991b1b; background: #fff1f2; border-color: var(--danger); }
+        .btn-responder { background: #eef2ff; color: var(--primary); border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.78rem; font-weight: 700; transition: 0.2s; font-family: inherit; }
+        .btn-responder:hover { background: var(--primary); color: white; }
+        .solic-filtros { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        .filtro-btn { background: white; border: 1.5px solid var(--border); color: var(--text-muted); padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 0.8rem; font-weight: 600; transition: 0.2s; font-family: inherit; }
+        .filtro-btn.ativo { background: var(--primary); border-color: var(--primary); color: white; }
+        .tipo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+        .tipo-chip { padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 10px; cursor: pointer; font-size: 0.8rem; font-weight: 600; text-align: center; transition: 0.15s; background: white; font-family: inherit; color: var(--text-main); }
+        .tipo-chip:hover { border-color: var(--primary); color: var(--primary); background: #eef2ff; }
+        .tipo-chip.selecionado { border-color: var(--primary); background: var(--primary); color: white; }
+
+        /* ======================== MODAIS + MISC ======================== */
+        .clock-footer { position: fixed; bottom: 20px; right: 20px; background: white; padding: 8px 16px; border-radius: 30px; border: 1px solid var(--border); box-shadow: var(--shadow); font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px; z-index: 99; }
+        .clock-dot { width: 6px; height: 6px; background: var(--primary); border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-overlay.open { display: flex; }
+        .modal-card { background: white; width: 90%; max-width: 500px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); padding: 24px; max-height: 90vh; overflow-y: auto; }
+        .modal-card h3 { margin-bottom: 16px; }
+        .modal-card input, .modal-card textarea, .modal-card select { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 0.9rem; outline: none; }
+        .modal-card input:focus, .modal-card textarea:focus, .modal-card select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+        .modal-card .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+        .btn-cancel { background: var(--bg); border: 1px solid var(--border); color: var(--text-muted); padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; font-family: inherit; }
+        .field-label { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.04em; }
+        .resp-info { background: #f8fafc; border-radius: 10px; padding: 14px; margin-bottom: 14px; }
+        .resp-info b { font-size: 0.85rem; display: block; margin-bottom: 2px; }
+        .resp-info small { font-size: 0.78rem; color: var(--text-muted); }
+        .resp-info p { font-size: 0.82rem; margin-top: 8px; color: var(--text-main); }
+        .btn-aprovar { background: #dcfce7; color: #166534; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; font-family: inherit; transition: 0.2s; }
+        .btn-aprovar:hover { background: #22c55e; color: white; }
+        .btn-recusar { background: var(--danger-bg); color: var(--danger); border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; font-family: inherit; transition: 0.2s; }
+        .btn-recusar:hover { background: var(--danger); color: white; }
+        .section-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+        .toast { position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 10px 20px; border-radius: 30px; font-size: 0.85rem; font-weight: 600; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
+        .toast.show { opacity: 1; }
+    </style>
+</head>
+<body>
+
+<!-- ======================== SIDEBAR ======================== -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+        <div class="sidebar-logo">
+            <div class="logo-icon" style="background:var(--primary);color:white;width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1rem">🌳</div>
+            <span>Menu</span>
+        </div>
+        <button class="btn-close-sidebar" onclick="closeSidebar()">✕</button>
+    </div>
+
+    <nav class="sidebar-nav">
+        <div class="sidebar-section-label">Principal</div>
+        <a class="sidebar-item" href="/dashboard"><span class="si-icon">🏠</span> Dashboard</a>
+        <a class="sidebar-item" href="/horas"><span class="si-icon">📅</span> Banco de Horas</a>
+        <a class="sidebar-item" href="/sgrh"><span class="si-icon">📄</span> SGRH</a>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-section-label">Ferramentas</div>
+        <a class="sidebar-item" href="/ocorrencias"><span class="si-icon">📋</span> Solicitações</a>
+        <a class="sidebar-item" href="/equipe"><span class="si-icon">👥</span> Nossa Equipe</a>
+        <a class="sidebar-item" href="/ramais"><span class="si-icon">📞</span> Ramais</a>
+        <a class="sidebar-item" href="/ci"><span class="si-icon">📄</span> CI</a>
+        <div class="sidebar-divider"></div>
+                <div class="sidebar-section-label">Agenda</div>
+        <a class="sidebar-item" href="/calendario_letivo"><span class="si-icon">🗓️</span> Calendário Letivo</a>
+        <a class="sidebar-item ativo" href="/hub"><span class="si-icon">🔗</span> HUB</a>
+        <a class="sidebar-item" href="/evento"><span class="si-icon">🎯</span> Eventos</a>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-section-label">Conteúdo</div>
+        <a class="sidebar-item" href="/repositorio"><span class="si-icon">📁</span> Repositório</a>
+        <a class="sidebar-item" href="/atas"><span class="si-icon">📝</span> Atas de Reunião</a>
+        <div class="sidebar-section-label">Relatórios</div>
+        <a class="sidebar-item" href="/relatorios"><span class="si-icon">🖨️</span> Relatórios</a>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="avatar-sm">{{ nome[0] }}</div>
+        <div class="sidebar-footer-info">
+            <b>{{ nome }}</b>
+            <small>{{ cargo | capitalize }}</small>
+        </div>
+        <a href="/logout" class="btn-logout-sidebar" title="Sair">⏻</a>
+    </div>
+</aside>
+
+<!-- ======================== NAVBAR ======================== -->
+<header class="navbar">
+    <div class="nav-left">
+        <button class="btn-menu" onclick="openSidebar()" title="Menu">☰</button>
+        <div class="logo-icon">🌳</div>
+        <div><h1>Página Inicial</h1><p>Olá, <strong>{{ nome }}</strong></p></div>
+    </div>
+
+    <div class="nav-center">
+        <a onclick="window.location.href='/horas'">📅 Banco de horas</a>
+        <a onclick="window.location.href='/sgrh'">📄 SGRH</a>
+    </div>
+
+    <div class="nav-right">
+        {% if cargo != "chefe" %}
+        <button class="btn-outline badge-btn" onclick="scrollToSolic()">
+            📋 Solicitações
+            <span class="notif-badge" id="badge-retorno" style="display:none">!</span>
+        </button>
+        {% endif %}
+        {% if cargo == "chefe" %}
+        <button class="btn-outline badge-btn" onclick="scrollToSolic()">
+            📥 Solicitações
+            <span class="notif-badge" id="badge-retorno" style="display:none">0</span>
+        </button>
+        {% endif %}
+
+        <div class="notif-wrapper" id="notif-wrapper">
+            <button class="notif-btn" onclick="toggleNotif()" title="Notificações">🔔</button>
+            <span class="notif-count" id="notif-count" style="display:none">0</span>
+            <div class="notif-dropdown" id="notif-dropdown">
+                <div class="notif-drop-header">
+                    <h4>🔔 Notificações</h4>
+                    <div class="notif-drop-actions">
+                        <button class="btn-marcar-todas" onclick="marcarTodasLidas()">Marcar lidas</button>
+                        <span style="color:var(--border)">|</span>
+                        <button class="btn-limpar-todas" onclick="limparTodasNotif()">🗑 Limpar</button>
+                    </div>
+                </div>
+                <div class="notif-lista" id="notif-lista"><p class="notif-empty">Carregando...</p></div>
+            </div>
+        </div>
+
+        <button class="btn-new" onclick="openModal('modal-task')">+ Nova tarefa</button>
+        <div style="width:1px;height:30px;background:var(--border)"></div>
+        <div class="user-profile">
+            <div class="user-info">
+                <span class="user-name">{{ nome }}</span>
+                <span class="user-status">Online</span>
+            </div>
+            <div class="avatar">{{ nome[0] }}</div>
+        </div>
+        <a href="/logout" style="font-size:0.8rem;color:var(--text-muted);text-decoration:none">Sair</a>
+    </div>
+</header>
+
+<!-- KANBAN -->
+<div class="board">
+    <div class="column column-todo" ondrop="drop(event,'todo')" ondragover="allow(event)"><h3>To Do</h3><div id="todo"></div></div>
+    <div class="column column-doing" ondrop="drop(event,'doing')" ondragover="allow(event)"><h3>Doing</h3><div id="doing"></div></div>
+    <div class="column column-done" ondrop="drop(event,'done')" ondragover="allow(event)"><h3>Done</h3><div id="done"></div></div>
+</div>
+
+<!-- APPS -->
+<section class="apps-section">
+    <div class="apps-grid" id="apps-list">
+        <div class="app-item btn-add-app" onclick="openModal('modal-app')"><div class="app-box">+</div><span>Adicionar</span></div>
+    </div>
+</section>
+
+<!-- COMUNICADOS -->
+<section class="comunicados-section">
+    <div class="comunicados-header">
+        <div class="section-title">📢 Mural de Comunicados</div>
+        <button class="btn-new" onclick="openModal('modal-com')">Postar Aviso</button>
+    </div>
+    <div class="comunicados-grid" id="comunicados-list"><p style="font-size:0.85rem;color:var(--text-muted)">Carregando...</p></div>
+</section>
+
+<!-- CALENDÁRIO + ANIVERSARIANTES -->
+<div class="cal-section">
+    <div class="cal-box">
+        <div class="cal-header">
+            <div class="section-title" style="margin:0">📅 Calendário</div>
+            <div class="cal-nav">
+                <button onclick="mudarMes(-1)">‹</button>
+                <span id="cal-titulo"></span>
+                <button onclick="mudarMes(1)">›</button>
+                {% if cargo == "chefe" %}
+                <button class="btn-new" style="padding:6px 12px;font-size:0.8rem;border-radius:8px" onclick="openModal('modal-evento')">+ Evento</button>
+                {% endif %}
+            </div>
+        </div>
+        <div class="cal-grid" id="cal-grid"></div>
+        <div class="eventos-lista" id="eventos-lista"></div>
+    </div>
+    <div class="aniv-box">
+        <div class="aniv-header"><span style="font-size:1.4rem">🎂</span><h2>Aniversariantes do Mês</h2></div>
+        <div class="aniv-list" id="aniv-list"><p class="aniv-empty">Carregando...</p></div>
+    </div>
+</div>
+
+<!-- EQUIPE -->
+<section class="equipe-section">
+    <div class="comunicados-header">
+        <div class="section-title">👥 Nossa Equipe</div>
+        <span style="font-size:0.7rem;color:var(--text-muted)">Sincronizado com Planilha</span>
+    </div>
+    <div class="user-grid" id="user-list"><p style="font-size:0.8rem;color:var(--text-muted)">Carregando equipe...</p></div>
+</section>
+
+<!-- SOLICITAÇÕES -->
+<section class="solic-section" id="solic-section">
+    <div class="solic-header">
+        <div class="section-title">{{ '📥 Solicitações da Equipe' if cargo == 'chefe' else '📋 Minhas Solicitações' }}</div>
+        <button class="btn-new" onclick="openModal('modal-solic')">+ Nova Solicitação</button>
+    </div>
+    <div class="solic-filtros">
+        <button class="filtro-btn ativo" onclick="filtrarSolic('todos',this)">Todas</button>
+        <button class="filtro-btn" onclick="filtrarSolic('pendente',this)">⏳ Pendentes</button>
+        <button class="filtro-btn" onclick="filtrarSolic('aprovada',this)">✅ Aprovadas</button>
+        <button class="filtro-btn" onclick="filtrarSolic('recusada',this)">❌ Recusadas</button>
+    </div>
+    <div class="solic-table-wrap">
+        <table class="solic-table">
+            <thead>
+                <tr>
+                    {% if cargo == "chefe" %}<th>Funcionário</th>{% endif %}
+                    <th>Tipo</th><th>Data ref.</th><th>Observação</th><th>Enviado em</th><th>Status</th><th>Resposta / Ação</th>
+                </tr>
+            </thead>
+            <tbody id="solic-tbody"><tr><td colspan="7" class="solic-empty">Carregando...</td></tr></tbody>
+        </table>
+    </div>
+</section>
+
+<div class="clock-footer"><div class="clock-dot"></div><span id="real-time">00:00:00</span></div>
+<div class="toast" id="toast"></div>
+
+<!-- MODAIS -->
+<div class="modal-overlay" id="modal-task">
+    <div class="modal-card">
+        <h3>Nova Tarefa</h3>
+        <input type="text" id="titulo-input" placeholder="Título">
+        <textarea id="descricao-input" placeholder="Descrição" rows="3"></textarea>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeModal('modal-task')">Cancelar</button>
+            <button class="btn-new" onclick="saveTask()">Criar</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modal-app">
+    <div class="modal-card">
+        <h3>Novo App</h3>
+        <input type="text" id="app-name-input" placeholder="Nome">
+        <input type="text" id="app-link-input" placeholder="Link (ex: https://...)">
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeModal('modal-app')">Cancelar</button>
+            <button class="btn-new" onclick="saveNewApp()">Adicionar</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modal-com">
+    <div class="modal-card">
+        <h3>Novo Comunicado</h3>
+        <input type="text" id="com-titulo-input" placeholder="Título">
+        <textarea id="com-texto-input" placeholder="Mensagem" rows="4"></textarea>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeModal('modal-com')">Cancelar</button>
+            <button class="btn-new" onclick="saveComunicado()">Publicar</button>
+        </div>
+    </div>
+</div>
+
+{% if cargo == "chefe" %}
+<div class="modal-overlay" id="modal-evento">
+    <div class="modal-card">
+        <h3>Novo Evento</h3>
+        <input type="text" id="ev-titulo-input" placeholder="Título do evento">
+        <div class="row-2">
+            <input type="date" id="ev-data-input">
+            <select id="ev-tipo-input">
+                <option value="evento">📌 Evento</option>
+                <option value="feriado">🔴 Feriado</option>
+            </select>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeModal('modal-evento')">Cancelar</button>
+            <button class="btn-new" onclick="saveEvento()">Salvar</button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="modal-overlay" id="modal-solic">
+    <div class="modal-card">
+        <h3>Nova Solicitação</h3>
+        <span class="field-label">Tipo de solicitação</span>
+        <div class="tipo-grid">
+            <button class="tipo-chip" onclick="selecionarTipo(this,'Folga')">🏖️ Folga</button>
+            <button class="tipo-chip" onclick="selecionarTipo(this,'Folga Compensatória')">🔄 Folga Compensatória</button>
+            <button class="tipo-chip" onclick="selecionarTipo(this,'Licença Médica / Atestado')">🏥 Licença Médica</button>
+            <button class="tipo-chip" onclick="selecionarTipo(this,'Abono de Falta')">📝 Abono de Falta</button>
+            <button class="tipo-chip" onclick="selecionarTipo(this,'Troca de Turno / Horário')">🔁 Troca de Turno</button>
+            <button class="tipo-chip" onclick="selecionarTipo(this,'Saída Antecipada')">🚪 Saída Antecipada</button>
+            <button class="tipo-chip" onclick="selecionarTipo(this,'Compensação de Horas')">⏱️ Compensação de Horas</button>
+            <button class="tipo-chip" onclick="selecionarTipo(this,'Férias')">🌴 Férias</button>
+            <button class="tipo-chip" onclick="selecionarTipo(this,'Licença Maternidade / Paternidade')">👶 Licença Mat./Pat.</button>
+            <button class="tipo-chip" onclick="selecionarTipo(this,'Capacitação / Curso Externo')">📚 Capacitação</button>
+            <button class="tipo-chip" onclick="selecionarTipo(this,'Remoção de Setor')">🏢 Remoção de Setor</button>
+            <button class="tipo-chip" onclick="selecionarTipo(this,'Outro')">💬 Outro</button>
+        </div>
+        <input type="hidden" id="solic-tipo-input">
+        <span class="field-label">Data referente</span>
+        <input type="date" id="solic-data-input">
+        <span class="field-label">Observação (opcional)</span>
+        <textarea id="solic-desc-input" placeholder="Detalhe sua solicitação se necessário..." rows="3"></textarea>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeModal('modal-solic')">Cancelar</button>
+            <button class="btn-new" onclick="saveSolicitacao()">Enviar</button>
+        </div>
+    </div>
+</div>
+
+{% if cargo == "chefe" %}
+<div class="modal-overlay" id="modal-responder">
+    <div class="modal-card">
+        <h3>Responder Solicitação</h3>
+        <div class="resp-info" id="resp-info-box"></div>
+        <input type="hidden" id="resp-solic-id">
+        <span class="field-label">Mensagem de resposta (opcional)</span>
+        <textarea id="resp-texto" placeholder="Ex: Aprovado. Favor registrar no sistema." rows="3"></textarea>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeModal('modal-responder')">Cancelar</button>
+            <button class="btn-recusar" onclick="responderSolic('recusada')">❌ Recusar</button>
+            <button class="btn-aprovar" onclick="responderSolic('aprovada')">✅ Aprovar</button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<script>
+    const USUARIO_ATUAL = "{{ nome }}";
+    const CARGO = "{{ cargo if cargo is defined else 'funcionario' }}";
+
+    // ======================== SIDEBAR ========================
+    function openSidebar() {
+        document.getElementById('sidebar').classList.add('open');
+        document.getElementById('sidebar-overlay').classList.add('open');
+    }
+    function closeSidebar() {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebar-overlay').classList.remove('open');
+    }
+    // Fecha sidebar com ESC
+    document.addEventListener('keydown', e => { if(e.key === 'Escape') closeSidebar(); });
+
+    // ======================== UTILS ========================
+    function openModal(id) { document.getElementById(id).classList.add('open'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+    window.onclick = e => { if(e.target.classList.contains('modal-overlay')) e.target.classList.remove('open'); };
+    function updateClock() { document.getElementById('real-time').textContent = new Date().toLocaleTimeString('pt-BR'); }
+    setInterval(updateClock, 1000); updateClock();
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg; t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2800);
+    }
+    function scrollToSolic() { document.getElementById('solic-section').scrollIntoView({ behavior: 'smooth' }); }
+    function escHtml(str) {
+        if(!str) return '';
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
+    // ======================== KANBAN ========================
+    function allow(e) { e.preventDefault(); }
+    function drag(e) { e.dataTransfer.setData("id", e.target.id); }
+    async function drop(e, status) {
+        e.preventDefault();
+        const id = e.dataTransfer.getData("id");
+        await fetch(`/tasks/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status}) });
+        if(status === 'done') confetti({ particleCount:150, spread:70, origin:{y:0.6}, colors:['#6366f1','#22c55e'] });
+        await renderTasks();
+    }
+    async function saveTask() {
+        const titulo = document.getElementById("titulo-input").value.trim();
+        const descricao = document.getElementById("descricao-input").value.trim();
+        if(!titulo) return;
+        await fetch('/tasks', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({titulo, descricao}) });
+        closeModal('modal-task');
+        document.getElementById("titulo-input").value = "";
+        document.getElementById("descricao-input").value = "";
+        await renderTasks();
+    }
+    async function deleteTask(id) {
+        if(!confirm("Excluir tarefa?")) return;
+        await fetch(`/tasks/${id}`, { method:'DELETE' });
+        await renderTasks();
+    }
+    async function renderTasks() {
+        ['todo','doing','done'].forEach(s => document.getElementById(s).innerHTML = "");
+        const tasks = await fetch('/tasks').then(r => r.json());
+        tasks.filter(t => t.nome === USUARIO_ATUAL).forEach(t => {
+            const div = document.createElement("div");
+            div.className = "card"; div.id = t.id; div.draggable = true; div.ondragstart = drag;
+            div.innerHTML = `<b>${t.titulo}</b><br><small style="color:var(--text-muted)">${t.descricao||""}</small><button class="btn-delete" onclick="deleteTask(${t.id})">🗑️</button>`;
+            document.getElementById(t.status).appendChild(div);
+        });
+    }
+
+    // ======================== APPS ========================
+    const appsPadrao = [
+        { id:'app-drive', name:'Drive', link:'https://drive.google.com', icon:'https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg' },
+        { id:'app-gmail', name:'Gmail', link:'https://mail.google.com', icon:'https://upload.wikimedia.org/wikipedia/commons/7/7e/Gmail_icon_%282020%29.svg' },
+        { id:'app-whatsapp', name:'WhatsApp', link:'https://web.whatsapp.com', icon:'https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg' },
+        { id:'app-canva', name:'Canva', link:'https://www.canva.com', icon:'https://upload.wikimedia.org/wikipedia/commons/0/08/Canva_icon_2021.svg' }
+    ];
+    function saveNewApp() {
+        let name = document.getElementById("app-name-input").value;
+        let link = document.getElementById("app-link-input").value;
+        if(!name||!link) return;
+        if(!link.startsWith('http')) link = 'https://'+link;
+        let list = JSON.parse(localStorage.getItem('custom_apps_list')||JSON.stringify(appsPadrao));
+        list.push({ id:'app-'+Date.now(), name, link });
+        localStorage.setItem('custom_apps_list', JSON.stringify(list));
+        renderApps(); closeModal('modal-app');
+    }
+    function renderApps() {
+        if(!localStorage.getItem('custom_apps_list')) localStorage.setItem('custom_apps_list', JSON.stringify(appsPadrao));
+        document.querySelectorAll('.app-item-container:not(.btn-add-app)').forEach(e => e.remove());
+        const grid = document.getElementById('apps-list');
+        const btn = document.querySelector('.btn-add-app');
+        JSON.parse(localStorage.getItem('custom_apps_list')).forEach(app => {
+            const div = document.createElement('div'); div.className = 'app-item-container';
+            const icon = app.icon||`https://www.google.com/s2/favicons?sz=64&domain=${app.link}`;
+            div.innerHTML = `<button class="btn-delete-app" onclick="deleteApp('${app.id}')">&times;</button><a href="${app.link}" target="_blank" class="app-item"><div class="app-box"><img src="${icon}" onerror="this.src='https://www.google.com/s2/favicons?sz=64&domain=${app.link}'"></div><span>${app.name}</span></a>`;
+            grid.insertBefore(div, btn);
+        });
+    }
+    function deleteApp(id) {
+        event.preventDefault(); event.stopPropagation();
+        let list = JSON.parse(localStorage.getItem('custom_apps_list')).filter(a => a.id!==id);
+        localStorage.setItem('custom_apps_list', JSON.stringify(list));
+        renderApps();
+    }
+
+    // ======================== NOTIFICAÇÕES ========================
+    const REFRESH_INTERVAL_MS = 5000;
+    async function carregarNotificacoes() {
+        try {
+            let lista = await fetch('/notificacoes').then(r => r.json());
+            lista = lista.filter((n, i, s) => s.findIndex(m => m.id === n.id) === i);
+            const naolidas = lista.filter(n => !n.lida);
+            const count = document.getElementById('notif-count');
+            count.textContent = naolidas.length;
+            count.style.display = naolidas.length > 0 ? 'flex' : 'none';
+            const listaEl = document.getElementById('notif-lista');
+            if(!lista.length) { listaEl.innerHTML = '<p class="notif-empty">Nenhuma notificação 🎉</p>'; return; }
+            const icones = { solicitacao:'📋', resposta:'📬', evento:'📅', evento_proximo:'⏰', aniversario:'🎂' };
+            listaEl.innerHTML = lista.map(n => {
+                const icon = icones[n.tipo] || '🔔';
+                const tempo = new Date(n.criado_em).toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+                return `<div class="notif-item ${n.lida?'':'nao-lida'}" onclick="lerNotif(${n.id},this)">
+                    <span class="notif-icon">${icon}</span>
+                    <div class="notif-texto"><p>${n.mensagem}</p><small>${tempo}</small></div>
+                    ${!n.lida?'<div class="notif-ponto"></div>':''}
+                    <button class="btn-del-notif" onclick="event.stopPropagation();deletarNotif(${n.id},this)">✕</button>
+                </div>`;
+            }).join('');
+        } catch(e) { console.error('Erro ao carregar notificações:', e); }
+    }
+    function toggleNotif() {
+        const dd = document.getElementById('notif-dropdown');
+        dd.classList.toggle('open');
+        if(dd.classList.contains('open')) carregarNotificacoes();
+    }
+    document.addEventListener('click', e => {
+        const wrapper = document.getElementById('notif-wrapper');
+        if(wrapper && !wrapper.contains(e.target)) document.getElementById('notif-dropdown').classList.remove('open');
+    });
+    async function lerNotif(id, el) {
+        await fetch('/notificacoes/marcar-lidas', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ids:[id]}) });
+        el.classList.remove('nao-lida'); el.querySelector('.notif-ponto')?.remove();
+        await carregarNotificacoes();
+    }
+    async function marcarTodasLidas() {
+        await fetch('/notificacoes/marcar-lidas', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ids:[]}) });
+        await carregarNotificacoes();
+    }
+    async function deletarNotif(id, btn) {
+        await fetch(`/notificacoes/${id}`, {method:'DELETE'});
+        btn.closest('.notif-item').remove(); await carregarNotificacoes();
+    }
+    async function limparTodasNotif() {
+        if(!confirm('Apagar todas as notificações?')) return;
+        try {
+            const res = await fetch('/notificacoes/limpar-todas', { method:'DELETE' });
+            if(!res.ok) throw new Error();
+        } catch(e) {
+            const lista = await fetch('/notificacoes').then(r => r.json());
+            await Promise.all(lista.map(n => fetch(`/notificacoes/${n.id}`, {method:'DELETE'})));
+        }
+        await carregarNotificacoes(); showToast('🗑 Notificações limpas!');
+    }
+    carregarNotificacoes();
+    setInterval(atualizarConteudoPeriodicamente, REFRESH_INTERVAL_MS);
+    async function atualizarConteudoPeriodicamente() {
+        await Promise.all([renderComunicados(), carregarSolicitacoes(), carregarEventos(), carregarNotificacoes()]);
+    }
+
+    // ======================== COMUNICADOS ========================
+    async function saveComunicado() {
+        const titulo = document.getElementById("com-titulo-input").value.trim();
+        const texto = document.getElementById("com-texto-input").value.trim();
+        if(!titulo||!texto) return;
+        await fetch('/comunicados', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({titulo,texto}) });
+        closeModal('modal-com');
+        document.getElementById("com-titulo-input").value = "";
+        document.getElementById("com-texto-input").value = "";
+        await renderComunicados();
+    }
+    async function deleteComunicado(id) { await fetch(`/comunicados/${id}`, {method:'DELETE'}); await renderComunicados(); }
+    async function renderComunicados() {
+        const grid = document.getElementById('comunicados-list');
+        const lista = await fetch('/comunicados').then(r => r.json());
+        if(!lista.length) { grid.innerHTML = '<p style="font-size:0.85rem;color:var(--text-muted)">Nenhum comunicado ainda.</p>'; return; }
+        grid.innerHTML = "";
+        const EMOJIS = ["👍","❤️","😂","😮","😢"];
+        lista.forEach(a => {
+            const isOwner = a.autor === USUARIO_ATUAL;
+            const data = new Date(a.criado_em).toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+            const reacoesHtml = EMOJIS.map(emoji => {
+                const r = a.reacoes[emoji]||{count:0,eu:false};
+                const ativa = r.eu?'ativa':'';
+                const count = r.count>0?`<span>${r.count}</span>`:'';
+                return `<button class="reacao-btn ${ativa}" onclick="reagir(${a.id},'${emoji}')"><span class="emoji">${emoji}</span>${count}</button>`;
+            }).join('');
+            grid.innerHTML += `<div class="comunicado-card">
+                <h4>${a.titulo}</h4><p>${a.texto}</p>
+                <div class="reacoes-bar">${reacoesHtml}</div>
+                <div class="comunicado-footer">
+                    <span class="comunicado-author">👤 ${a.autor}</span>
+                    <span class="comunicado-date">${data}</span>
+                    ${isOwner?`<button class="btn-delete-comunicado" onclick="deleteComunicado(${a.id})">Excluir</button>`:''}
+                </div>
+            </div>`;
+        });
+    }
+    async function reagir(id, emoji) {
+        await fetch(`/comunicados/${id}/reagir`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({emoji}) });
+        await renderComunicados();
+    }
+
+    // ======================== CALENDÁRIO ========================
+    const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const DIAS_SEMANA = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    let calAtual = new Date(), todosEventos = [], aniversariantes = [];
+    async function carregarEventos() {
+        todosEventos = await fetch('/eventos').then(r => r.json());
+        aniversariantes = await fetch('/aniversariantes').then(r => r.json());
+        renderCalendario(); renderAniversariantes();
+    }
+    function mudarMes(delta) { calAtual.setMonth(calAtual.getMonth()+delta); renderCalendario(); }
+    function renderCalendario() {
+        const ano=calAtual.getFullYear(), mes=calAtual.getMonth(), hoje=new Date();
+        document.getElementById('cal-titulo').textContent = `${MESES[mes]} ${ano}`;
+        const grid=document.getElementById('cal-grid'); grid.innerHTML="";
+        DIAS_SEMANA.forEach(d => { const el=document.createElement('div'); el.className='cal-day-name'; el.textContent=d; grid.appendChild(el); });
+        const primeiroDia=new Date(ano,mes,1).getDay(), ultimoDia=new Date(ano,mes+1,0).getDate();
+        const diasMesAnt=new Date(ano,mes,0).getDate();
+        for(let i=primeiroDia-1;i>=0;i--) { const el=document.createElement('div'); el.className='cal-day outro-mes'; el.textContent=diasMesAnt-i; grid.appendChild(el); }
+        for(let d=1;d<=ultimoDia;d++) {
+            const el=document.createElement('div'); el.className='cal-day';
+            const dataStr=`${ano}-${String(mes+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            if(d===hoje.getDate()&&mes===hoje.getMonth()&&ano===hoje.getFullYear()) el.classList.add('hoje');
+            if(todosEventos.some(ev=>ev.data===dataStr)) el.classList.add('tem-evento');
+            if(aniversariantes.some(a=>a.dia===d&&a.mes===(mes+1))) el.classList.add('aniversario');
+            el.textContent=d; grid.appendChild(el);
+        }
+        const total=primeiroDia+ultimoDia, restante=total%7===0?0:7-(total%7);
+        for(let d=1;d<=restante;d++) { const el=document.createElement('div'); el.className='cal-day outro-mes'; el.textContent=d; grid.appendChild(el); }
+        renderEventosMes(ano,mes);
+    }
+    function renderEventosMes(ano,mes) {
+        const lista=document.getElementById('eventos-lista');
+        const prefixo=`${ano}-${String(mes+1).padStart(2,'0')}`;
+        const eventosMes=todosEventos.filter(ev=>ev.data.startsWith(prefixo));
+        const anivMes=aniversariantes.filter(a=>a.mes===(mes+1));
+        const itens=[
+            ...eventosMes.map(ev=>({...ev,_tipo:ev.tipo})),
+            ...anivMes.map(a=>({titulo:a.nome,data:`${String(a.dia).padStart(2,'0')}/${String(a.mes).padStart(2,'0')}`,_tipo:'aniversario',id:null}))
+        ].sort((a,b)=>{
+            const diaA=a.data.includes('-')?parseInt(a.data.split('-')[2]):parseInt(a.data.split('/')[0]);
+            const diaB=b.data.includes('-')?parseInt(b.data.split('-')[2]):parseInt(b.data.split('/')[0]);
+            return diaA-diaB;
+        });
+        if(!itens.length) { lista.innerHTML='<p style="font-size:0.8rem;color:var(--text-muted);padding:8px 0">Nenhum evento este mês.</p>'; return; }
+        lista.innerHTML=itens.map(ev=>{
+            const dotClass=ev._tipo==='feriado'?'dot-feriado':ev._tipo==='aniversario'?'dot-aniversario':'dot-evento';
+            const emoji=ev._tipo==='feriado'?'🔴':ev._tipo==='aniversario'?'🎂':'📌';
+            const dataFmt=ev.data.includes('-')?`${ev.data.split('-')[2]}/${ev.data.split('-')[1]}`:ev.data;
+            const delBtn=(CARGO==='chefe'&&ev.id)?`<button class="btn-del-evento" onclick="deleteEvento(${ev.id})">🗑</button>`:'';
+            return `<div class="evento-item"><div class="evento-dot ${dotClass}"></div><div class="evento-info"><b>${emoji} ${ev.titulo}</b><small>${dataFmt}</small></div>${delBtn}</div>`;
+        }).join('');
+    }
+    async function saveEvento() {
+        const titulo=document.getElementById("ev-titulo-input").value.trim();
+        const data=document.getElementById("ev-data-input").value;
+        const tipo=document.getElementById("ev-tipo-input").value;
+        if(!titulo||!data) return;
+        await fetch('/eventos', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({titulo,data,tipo}) });
+        closeModal('modal-evento'); document.getElementById("ev-titulo-input").value="";
+        showToast('✅ Evento adicionado!'); await carregarEventos();
+    }
+    async function deleteEvento(id) { await fetch(`/eventos/${id}`,{method:'DELETE'}); await carregarEventos(); }
+
+    // ======================== ANIVERSARIANTES ========================
+    function renderAniversariantes() {
+        const lista=document.getElementById('aniv-list');
+        if(!aniversariantes.length) { lista.innerHTML='<p class="aniv-empty">Nenhum aniversariante este mês 🎈</p>'; return; }
+        lista.innerHTML=aniversariantes.map(a=>`<div class="aniv-card ${a.hoje?'hoje-aniv':''}"><span class="aniv-emoji">${a.hoje?'🥳':'🎂'}</span><div class="aniv-info"><b>${a.nome}</b><small>dia ${a.dia}/${String(a.mes).padStart(2,'0')} ${a.hoje?'— Hoje! 🎉':''}</small></div></div>`).join('');
+    }
+
+    // ======================== EQUIPE ========================
+    async function carregarEquipePlanilha() {
+        const SHEET_ID='1nYgCV6SgPf5PTIIJZLQcM9xfw5L08SNber7ZEDfUWOo';
+        const URL=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=FUNCIONARIOS&range=B2:E60`;
+        try {
+            const r=await fetch(URL), text=await r.text();
+            const data=JSON.parse(text.substr(47).slice(0,-2)), rows=data.table.rows;
+            const list=document.getElementById('user-list'); list.innerHTML="";
+            rows.forEach(r => {
+                if(!r.c[0]) return;
+                const nome=r.c[0].v, email=r.c[1]?r.c[1].v:"---";
+                const statusStr=r.c[3]?r.c[3].v.toUpperCase():"INATIVO";
+                let sc="u-offline";
+                if(statusStr==='ATIVO') sc="u-online";
+                else if(statusStr.includes("FÉRIAS")||statusStr.includes("FERIAS")) sc="u-ferias";
+                else if(statusStr.includes("AFASTADO")) sc="u-afastado";
+                list.innerHTML+=`<div class="user-card"><div class="u-avatar">${nome[0]}</div><div class="u-info"><b>${nome}</b><small>${email}</small><span style="font-size:0.6rem;font-weight:700;color:var(--text-muted)">${statusStr}</span></div><div class="u-status ${sc}"></div></div>`;
+            });
+        } catch(e) { document.getElementById('user-list').innerHTML="<p>Erro ao sincronizar equipe.</p>"; }
+    }
+
+    // ======================== SOLICITAÇÕES ========================
+    let todasSolicLocal=[], filtroAtual='todos';
+    function selecionarTipo(el, tipo) {
+        document.querySelectorAll('.tipo-chip').forEach(c => c.classList.remove('selecionado'));
+        el.classList.add('selecionado');
+        document.getElementById('solic-tipo-input').value = tipo;
+    }
+    async function carregarSolicitacoes() {
+        todasSolicLocal = await fetch('/solicitacoes').then(r => r.json());
+        renderSolicitacoes(); atualizarBadge();
+    }
+    function atualizarBadge() {
+        const badge = document.getElementById('badge-retorno');
+        const sidebarBadge = document.getElementById('sidebar-badge-solic');
+        if(CARGO === 'chefe') {
+            const pendentes = todasSolicLocal.filter(s => s.status === 'pendente').length;
+            if(badge) { badge.textContent=pendentes; badge.style.display=pendentes>0?'flex':'none'; }
+            if(sidebarBadge) { sidebarBadge.textContent=pendentes; sidebarBadge.classList.toggle('visible', pendentes>0); }
+        } else {
+            const respondidas = todasSolicLocal.filter(s => s.status !== 'pendente').length;
+            if(badge) badge.style.display = respondidas>0?'flex':'none';
+            if(sidebarBadge) sidebarBadge.classList.toggle('visible', respondidas>0);
+        }
+    }
+    function filtrarSolic(status, btn) {
+        filtroAtual=status;
+        document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('ativo'));
+        btn.classList.add('ativo'); renderSolicitacoes();
+    }
+    function renderSolicitacoes() {
+        const tbody=document.getElementById('solic-tbody');
+        let lista=todasSolicLocal;
+        if(filtroAtual!=='todos') lista=lista.filter(s=>s.status===filtroAtual);
+        if(!lista.length) { tbody.innerHTML=`<tr><td colspan="7" class="solic-empty">Nenhuma solicitação encontrada.</td></tr>`; return; }
+        tbody.innerHTML=lista.map(s => {
+            const badgeClass=s.status==='aprovada'?'badge-aprovada':s.status==='recusada'?'badge-recusada':'badge-pendente';
+            const badgeEmoji=s.status==='aprovada'?'✅':s.status==='recusada'?'❌':'⏳';
+            const enviadoEm=new Date(s.data_pedido).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'});
+            let dataRef='—';
+            if(s.data_ref) { const p=s.data_ref.split('-'); dataRef=p.length===3?`${p[2]}/${p[1]}/${p[0]}`:s.data_ref; }
+            let acaoCol='';
+            if(CARGO==='chefe') {
+                acaoCol = s.status==='pendente'
+                    ? `<button class="btn-responder" onclick="abrirResponder(${s.id},'${escHtml(s.solicitante)}','${escHtml(s.tipo)}',\`${escHtml(s.descricao)}\`,'${dataRef}')">Responder</button>`
+                    : s.resposta?`<span class="solic-resposta ${s.status==='recusada'?'recusada':''}">${escHtml(s.resposta)}</span>`:'<span style="color:var(--text-muted);font-size:0.78rem">—</span>';
+                acaoCol += ` <button class="btn-delete-comunicado" onclick="deleteSolicitacao(${s.id})">Excluir</button>`;
+            } else {
+                acaoCol = s.resposta
+                    ? `<span class="solic-resposta ${s.status==='recusada'?'recusada':''}">${escHtml(s.resposta)}</span>`
+                    : s.status==='pendente'?'<span style="color:var(--text-muted);font-size:0.78rem">Aguardando...</span>':'<span style="color:var(--text-muted);font-size:0.78rem">—</span>';
+            }
+            const funcCol=CARGO==='chefe'?`<td><b>${escHtml(s.solicitante)}</b></td>`:'';
+            return `<tr>${funcCol}<td style="font-weight:600;font-size:0.82rem">${escHtml(s.tipo)}</td><td style="font-size:0.82rem">${dataRef}</td><td><div class="solic-desc" title="${escHtml(s.descricao)}">${escHtml(s.descricao)||'—'}</div></td><td style="font-size:0.78rem;color:var(--text-muted);white-space:nowrap">${enviadoEm}</td><td><span class="badge ${badgeClass}">${badgeEmoji} ${s.status.charAt(0).toUpperCase()+s.status.slice(1)}</span></td><td>${acaoCol}</td></tr>`;
+        }).join('');
+    }
+    async function saveSolicitacao() {
+        const tipo=document.getElementById("solic-tipo-input").value;
+        const data_ref=document.getElementById("solic-data-input").value;
+        const descricao=document.getElementById("solic-desc-input").value.trim();
+        if(!tipo) { showToast('⚠️ Selecione o tipo de solicitação'); return; }
+        await fetch('/solicitacoes', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({tipo,data_ref,descricao}) });
+        closeModal('modal-solic');
+        document.getElementById("solic-tipo-input").value="";
+        document.getElementById("solic-data-input").value="";
+        document.getElementById("solic-desc-input").value="";
+        document.querySelectorAll('.tipo-chip').forEach(c=>c.classList.remove('selecionado'));
+        showToast('📋 Solicitação enviada!'); await carregarSolicitacoes();
+    }
+    function abrirResponder(id, solicitante, tipo, descricao, dataRef) {
+        document.getElementById('resp-solic-id').value=id;
+        document.getElementById('resp-texto').value='';
+        document.getElementById('resp-info-box').innerHTML=`<b>👤 ${escHtml(solicitante)}</b><small>${escHtml(tipo)}${dataRef!=='—'?' · 📅 '+dataRef:''}</small>${descricao?`<p>${escHtml(descricao)}</p>`:''}`;
+        openModal('modal-responder');
+    }
+    async function responderSolic(status) {
+        const id=document.getElementById('resp-solic-id').value;
+        const resposta=document.getElementById('resp-texto').value.trim();
+        await fetch(`/solicitacoes/${id}/responder`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status,resposta}) });
+        closeModal('modal-responder');
+        showToast(status==='aprovada'?'✅ Aprovada!':'❌ Recusada.');
+        await carregarSolicitacoes();
+    }
+    async function deleteSolicitacao(id) {
+        if(!confirm('Excluir esta solicitação?')) return;
+        const res=await fetch(`/solicitacoes/${id}`,{method:'DELETE'});
+        if(res.ok) { showToast('🗑 Excluída!'); await carregarSolicitacoes(); }
+        else { const d=await res.json(); showToast(d.erro||'Erro ao excluir.'); }
+    }
+
+    // ======================== INIT ========================
+    renderTasks(); renderApps(); renderComunicados();
+    carregarEventos(); carregarEquipePlanilha(); carregarSolicitacoes();
+</script>
+</body>
+</html>

@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SGRH – Justificativa de Ponto</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg: #f1f5f9;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --danger: #ef4444;
+            --danger-bg: #fee2e2;
+            --success: #22c55e;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background: var(--bg); color: var(--text-main); min-height: 100vh; padding-bottom: 80px; }
+
+        /* NAVBAR */
+        header.navbar {
+            background: #fff; padding: 15px 40px; display: flex;
+            justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100;
+            box-shadow: 0 1px 3px rgb(0 0 0 / 0.06);
+        }
+        .nav-left { display: flex; align-items: center; gap: 15px; }
+        .logo-icon { background: var(--primary); color: white; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; }
+        .nav-left h1 { font-size: 1.05rem; margin: 0; font-weight: 700; }
+        .nav-left p { font-size: 0.82rem; color: var(--text-muted); margin: 0; }
+        .btn-back { background: var(--bg); border: 1px solid var(--border); color: var(--text-muted); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-family: inherit; font-size: 0.85rem; text-decoration: none; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
+        .btn-back:hover { background: #e2e8f0; color: var(--text-main); }
+
+        /* PÁGINA */
+        .page { max-width: 1020px; margin: 0 auto; padding: 28px 24px; }
+
+        /* CABEÇALHO */
+        .sgrh-header {
+            background: white; border-radius: 16px; border: 1px solid var(--border);
+            box-shadow: var(--shadow); padding: 22px 28px; margin-bottom: 18px;
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;
+        }
+        .sgrh-info h2 { font-size: 1rem; font-weight: 700; margin-bottom: 3px; }
+        .sgrh-info p { font-size: 0.75rem; color: var(--text-muted); }
+
+        .controles { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+
+        .ctrl-group { display: flex; flex-direction: column; gap: 5px; }
+        .ctrl-group label { font-size: 0.68rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+        .ctrl-group select {
+            padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 8px;
+            font-family: inherit; font-size: 0.88rem; font-weight: 600; outline: none;
+            cursor: pointer; background: white; color: var(--text-main); transition: 0.15s;
+        }
+        .ctrl-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+
+        /* seletor mês/ano destacado */
+        .mes-ano-wrap {
+            display: flex; gap: 6px; align-items: flex-end;
+        }
+        .mes-ano-wrap .ctrl-group select {
+            border-color: var(--primary); color: var(--primary); background: #eef2ff; font-weight: 700;
+        }
+
+        /* separador */
+        .ctrl-sep { width: 1px; height: 38px; background: var(--border); align-self: flex-end; }
+
+        /* STATUS */
+        .status-bar {
+            display: none; align-items: center; gap: 10px; padding: 10px 16px;
+            border-radius: 10px; font-size: 0.82rem; font-weight: 600; margin-bottom: 16px;
+        }
+        .status-bar.show { display: flex; }
+        .status-bar.loading { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+        .status-bar.success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+        .status-bar.error   { background: #fff1f2; color: #991b1b; border: 1px solid #fecaca; }
+        .status-bar.info    { background: #f8fafc; color: var(--text-muted); border: 1px solid var(--border); }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .loading .status-dot { background: #3b82f6; animation: pdot 1s infinite; }
+        .success .status-dot { background: var(--success); }
+        .error   .status-dot { background: var(--danger); }
+        .info    .status-dot { background: #94a3b8; }
+        @keyframes pdot { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+        /* QUINZENA */
+        .quinzena-block {
+            background: white; border-radius: 16px; border: 1px solid var(--border);
+            box-shadow: var(--shadow); margin-bottom: 18px; overflow: hidden;
+        }
+        .quinzena-header {
+            padding: 14px 22px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 10px;
+        }
+        .qbadge {
+            background: var(--primary); color: white; font-size: 0.68rem; font-weight: 700;
+            padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em; flex-shrink: 0;
+        }
+        .qbadge.q2 { background: #8b5cf6; }
+        .quinzena-header h3 { font-size: 0.88rem; font-weight: 700; }
+        .quinzena-header small { font-size: 0.72rem; color: var(--text-muted); margin-left: auto; }
+
+        /* TABELA */
+        .sgrh-table { width: 100%; border-collapse: collapse; }
+        .sgrh-table thead tr { background: #f8fafc; }
+        .sgrh-table th {
+            padding: 9px 11px; text-align: left; font-size: 0.67rem; font-weight: 700;
+            text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border);
+        }
+        .sgrh-table td { padding: 4px 5px; border-bottom: 1px solid #f1f5f9; }
+        .sgrh-table tr:last-child td { border-bottom: none; }
+        .sgrh-table tr:hover td { background: #fafbff; }
+
+        .col-num  { width: 34px; text-align: center; color: var(--text-muted); font-size: 0.74rem; font-weight: 700; padding: 0 4px !important; }
+        .col-data { width: 145px; }
+        .col-hora { width: 128px; }
+        .col-just { width: 208px; }
+
+        .sgrh-table input[type="date"],
+        .sgrh-table input[type="text"],
+        .sgrh-table select {
+            width: 100%; padding: 6px 9px; border: 1.5px solid transparent;
+            border-radius: 7px; font-family: inherit; font-size: 0.8rem;
+            background: #f8fafc; outline: none; transition: 0.15s; color: var(--text-main);
+        }
+        .sgrh-table input:focus, .sgrh-table select:focus {
+            border-color: var(--primary); background: white;
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+        }
+        .sgrh-table input:hover, .sgrh-table select:hover { border-color: #cbd5e1; background: white; }
+
+        /* cores por justificativa */
+        select.c90    { background: #fef9c3 !important; }
+        select.c95    { background: #dbeafe !important; }
+        select.c7     { background: #dcfce7 !important; }
+        select.c150   { background: #f3e8ff !important; }
+        select.coutro { background: #fff7ed !important; }
+        select.ctroca { background: #fce7f3 !important; }
+
+        /* AÇÕES */
+        .actions-bar { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; flex-wrap: wrap; }
+        .btn-save {
+            background: var(--primary); color: white; border: none; padding: 11px 26px;
+            border-radius: 10px; font-weight: 700; font-size: 0.88rem; cursor: pointer;
+            font-family: inherit; display: flex; align-items: center; gap: 8px; transition: 0.2s;
+        }
+        .btn-save:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        .btn-save:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+        .btn-secondary {
+            background: white; border: 1.5px solid var(--border); color: var(--text-main);
+            padding: 11px 20px; border-radius: 10px; font-weight: 700; font-size: 0.88rem;
+            cursor: pointer; font-family: inherit; transition: 0.2s; display: flex; align-items: center; gap: 6px;
+        }
+        .btn-secondary:hover { background: var(--bg); }
+        .btn-limpar {
+            background: white; color: var(--danger); border: 1.5px solid var(--danger);
+            padding: 11px 20px; border-radius: 10px; font-weight: 700; font-size: 0.88rem;
+            cursor: pointer; font-family: inherit; transition: 0.2s;
+        }
+        .btn-limpar:hover { background: var(--danger-bg); }
+
+        /* indicador de rascunho salvo */
+        .draft-tag {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;
+            font-size: 0.72rem; font-weight: 700; padding: 4px 10px; border-radius: 20px;
+            align-self: center;
+        }
+
+        /* LOADING */
+        .loading-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.45);
+            backdrop-filter: blur(4px); z-index: 500; align-items: center; justify-content: center;
+        }
+        .loading-overlay.show { display: flex; }
+        .loading-card { background: white; border-radius: 16px; padding: 30px 40px; text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
+        .spinner { width: 38px; height: 38px; border: 4px solid #e2e8f0; border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-card p { font-size: 0.86rem; color: var(--text-muted); font-weight: 600; }
+
+        .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 11px 22px; border-radius: 30px; font-size: 0.84rem; font-weight: 600; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
+        .toast.show { opacity: 1; }
+
+        @media (max-width: 700px) {
+            .sgrh-header { flex-direction: column; align-items: flex-start; }
+            .page { padding: 14px; }
+            header.navbar { padding: 12px 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="navbar">
+    <div class="nav-left">
+        <div class="logo-icon">🌳</div>
+        <div>
+            <h1>SGRH – Justificativa de Ponto</h1>
+            <p>Olá, <strong>{{ nome }}</strong></p>
+        </div>
+    </div>
+    <a href="/dashboard" class="btn-back">← Dashboard</a>
+</header>
+
+<div class="page">
+
+    <div class="sgrh-header">
+        <div class="sgrh-info">
+            <h2>📋 Justificativa de Registro de Ponto</h2>
+            <p>Secretaria de Educação e Cidadania · Departamento de Educação Básica · Coordenadoria Pedagógica</p>
+        </div>
+
+        <div class="controles">
+            {% if cargo == "chefe" %}
+            <div class="ctrl-group">
+                <label>Funcionário</label>
+                <select id="func-select" onchange="trocarFuncionario()">
+                    <option value="">Selecione...</option>
+                    {% for f in funcionarios %}
+                    <option value="{{ f.NOME }}">{{ f.NOME }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="ctrl-sep"></div>
+            {% endif %}
+
+            <!-- Seletor mês e ano separados -->
+            <div class="mes-ano-wrap">
+                <div class="ctrl-group">
+                    <label>Mês</label>
+                    <select id="mes-select" onchange="trocarMesAno()">
+                        <option value="0">Janeiro</option>
+                        <option value="1">Fevereiro</option>
+                        <option value="2">Março</option>
+                        <option value="3">Abril</option>
+                        <option value="4">Maio</option>
+                        <option value="5">Junho</option>
+                        <option value="6">Julho</option>
+                        <option value="7">Agosto</option>
+                        <option value="8">Setembro</option>
+                        <option value="9">Outubro</option>
+                        <option value="10">Novembro</option>
+                        <option value="11">Dezembro</option>
+                    </select>
+                </div>
+                <div class="ctrl-group">
+                    <label>Ano</label>
+                    <select id="ano-select" onchange="trocarMesAno()">
+                        <!-- preenchido via JS -->
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- status -->
+    <div class="status-bar" id="status-bar">
+        <div class="status-dot"></div>
+        <span id="status-msg"></span>
+    </div>
+
+    <!-- 1ª QUINZENA -->
+    <div class="quinzena-block">
+        <div class="quinzena-header">
+            <span class="qbadge">1ª Quinzena</span>
+            <h3 id="titulo-q1">–</h3>
+            <small id="periodo-q1">dias 01 a 15</small>
+        </div>
+        <table class="sgrh-table">
+            <thead><tr>
+                <th class="col-num">#</th>
+                <th class="col-data">Data</th>
+                <th class="col-hora">Horário</th>
+                <th class="col-just">Justificativa</th>
+                <th>Observações</th>
+            </tr></thead>
+            <tbody id="tbody-q1"></tbody>
+        </table>
+    </div>
+
+    <!-- 2ª QUINZENA -->
+    <div class="quinzena-block">
+        <div class="quinzena-header">
+            <span class="qbadge q2">2ª Quinzena</span>
+            <h3 id="titulo-q2">–</h3>
+            <small id="periodo-q2">dias 16 ao fim do mês</small>
+        </div>
+        <table class="sgrh-table">
+            <thead><tr>
+                <th class="col-num">#</th>
+                <th class="col-data">Data</th>
+                <th class="col-hora">Horário</th>
+                <th class="col-just">Justificativa</th>
+                <th>Observações</th>
+            </tr></thead>
+            <tbody id="tbody-q2"></tbody>
+        </table>
+    </div>
+
+    <div class="actions-bar">
+        <span class="draft-tag" id="draft-tag" style="display:none">✓ Rascunho salvo</span>
+        <button class="btn-limpar" onclick="confirmarLimpar()">🗑️ Limpar tudo</button>
+        <button class="btn-secondary" onclick="carregarDaPlanilha()">📥 Carregar da Planilha</button>
+        <button class="btn-save" id="btn-salvar" onclick="salvarNaPlanilha()">💾 Salvar na Planilha</button>
+    </div>
+</div>
+
+<div class="loading-overlay" id="loading-overlay">
+    <div class="loading-card">
+        <div class="spinner"></div>
+        <p id="loading-msg">Carregando...</p>
+    </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+    const CARGO = "{{ cargo if cargo is defined else 'funcionario' }}";
+    const NOME_USUARIO = "{{ nome }}";
+    const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const N_LINHAS = 13;
+
+    const JUSTIFICATIVAS = [
+        { v: "",      label: "— Selecione —",                         cls: "" },
+        { v: "95",    label: "95 - Serviço Externo",                  cls: "c95" },
+        { v: "7",     label: "7 - Abonada",                           cls: "c7" },
+        { v: "150",   label: "150 - TRE",                             cls: "c150" },
+        { v: "90",    label: "90 - Justificado c/ Autor. da Chefia",  cls: "c90" },
+        { v: "outro", label: "Outro",                                  cls: "coutro" },
+        { v: "troca", label: "Troca de Horário",                      cls: "ctroca" },
+    ];
+
+    let mesSel  = new Date().getMonth();   // 0-based
+    let anoSel  = new Date().getFullYear();
+    let funcSel = CARGO === 'chefe' ? null : NOME_USUARIO;
+    let trocandoMes = false; // flag pra evitar loop
+
+    // ── INIT ──────────────────────────────────────
+    function init() {
+        preencherSelectAno();
+        document.getElementById('mes-select').value = mesSel;
+        gerarLinhas('tbody-q1');
+        gerarLinhas('tbody-q2');
+        atualizarTitulos();
+        if(CARGO !== 'chefe') carregarRascunho();
+    }
+
+    function preencherSelectAno() {
+        const sel = document.getElementById('ano-select');
+        const hoje = new Date().getFullYear();
+        // de 5 anos atrás até 5 anos à frente
+        for(let a = hoje - 5; a <= hoje + 5; a++) {
+            const opt = document.createElement('option');
+            opt.value = a;
+            opt.textContent = a;
+            if(a === hoje) opt.selected = true;
+            sel.appendChild(opt);
+        }
+    }
+
+    // ── LINHAS ────────────────────────────────────
+    function gerarLinhas(tbodyId) {
+        const tbody = document.getElementById(tbodyId);
+        tbody.innerHTML = '';
+        const opts = JUSTIFICATIVAS.map(j => `<option value="${j.v}">${j.label}</option>`).join('');
+        for(let i = 1; i <= N_LINHAS; i++) {
+            tbody.innerHTML += `<tr>
+                <td class="col-num">${i}</td>
+                <td class="col-data"><input type="date"></td>
+                <td class="col-hora"><input type="text" placeholder="ex: 9:00-11:00"></td>
+                <td class="col-just"><select onchange="colorirJust(this)">${opts}</select></td>
+                <td><input type="text" placeholder="Observações..."></td>
+            </tr>`;
+        }
+    }
+
+    function colorirJust(sel) {
+        const cls = JUSTIFICATIVAS.map(j => j.cls).filter(Boolean);
+        sel.classList.remove(...cls);
+        const j = JUSTIFICATIVAS.find(j => j.v === sel.value);
+        if(j && j.cls) sel.classList.add(j.cls);
+    }
+
+    // ── MÊS / ANO / FUNCIONÁRIO ───────────────────
+    async function trocarMesAno() {
+        if(trocandoMes) return;
+        trocandoMes = true;
+
+        const novoMes = parseInt(document.getElementById('mes-select').value);
+        const novoAno = parseInt(document.getElementById('ano-select').value);
+
+        // Salva rascunho do mês atual antes de trocar
+        if(funcSel) await salvarRascunho(false);
+
+        mesSel = novoMes;
+        anoSel = novoAno;
+        atualizarTitulos();
+        limparCampos(false);
+
+        if(funcSel) await carregarRascunho();
+
+        trocandoMes = false;
+    }
+
+    function trocarFuncionario() {
+        funcSel = document.getElementById('func-select').value || null;
+        if(funcSel) { limparCampos(false); carregarRascunho(); }
+    }
+
+    function atualizarTitulos() {
+        const nome = `${MESES[mesSel]} / ${anoSel}`;
+        const ultimoDia = new Date(anoSel, mesSel + 1, 0).getDate();
+        document.getElementById('titulo-q1').textContent = nome;
+        document.getElementById('titulo-q2').textContent = nome;
+        document.getElementById('periodo-q1').textContent = 'dias 01 a 15';
+        document.getElementById('periodo-q2').textContent = `dias 16 a ${ultimoDia}`;
+    }
+
+    // ── LIMPAR ────────────────────────────────────
+    function limparCampos(confirmar = true) {
+        if(confirmar && !confirm('Limpar todos os campos das duas quinzenas?')) return;
+        ['tbody-q1','tbody-q2'].forEach(id => {
+            document.querySelectorAll(`#${id} tr`).forEach(tr => {
+                tr.querySelectorAll('input').forEach(el => el.value = '');
+                const sel = tr.querySelector('select');
+                if(sel) { sel.value = ''; colorirJust(sel); }
+            });
+        });
+        esconderDraftTag();
+    }
+    function confirmarLimpar() { limparCampos(true); }
+
+    // ── RASCUNHO (SQLite via backend) ─────────────
+    async function salvarRascunho(mostrarFeedback = true) {
+        if(!funcSel) return;
+        try {
+            await fetch('/sgrh/rascunho', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    funcionario: funcSel,
+                    ano: anoSel,
+                    mes: mesSel + 1,
+                    q1: coletarLinhas('tbody-q1'),
+                    q2: coletarLinhas('tbody-q2'),
+                })
+            });
+            if(mostrarFeedback) {
+                mostrarDraftTag();
+                showToast('📝 Rascunho salvo automaticamente');
+            } else {
+                mostrarDraftTag();
+            }
+        } catch(e) {
+            console.error('Erro ao salvar rascunho:', e);
+        }
+    }
+
+    async function carregarRascunho() {
+        if(!funcSel) return;
+        mostrarLoading('Carregando rascunho...');
+        try {
+            const p = new URLSearchParams({ funcionario: funcSel, ano: anoSel, mes: mesSel + 1 });
+            const res = await fetch(`/sgrh/rascunho?${p}`);
+            const data = await res.json();
+            if(data.ok && (data.q1.some(l => l.data || l.horario || l.just || l.obs) ||
+                           data.q2.some(l => l.data || l.horario || l.just || l.obs))) {
+                preencherTabela('tbody-q1', data.q1);
+                preencherTabela('tbody-q2', data.q2);
+                mostrarDraftTag();
+                setStatus('info', `📝 Rascunho carregado — ${MESES[mesSel]} / ${anoSel}`);
+            } else {
+                setStatus('info', `Nenhum rascunho para ${MESES[mesSel]} / ${anoSel}`);
+            }
+        } catch(e) {
+            console.error('Erro ao carregar rascunho:', e);
+        } finally { esconderLoading(); }
+    }
+
+    // ── CARREGAR DA PLANILHA ──────────────────────
+    async function carregarDaPlanilha() {
+        if(!funcSel) { showToast('⚠️ Selecione um funcionário'); return; }
+        mostrarLoading('Carregando da planilha Google...');
+        try {
+            const p = new URLSearchParams({ funcionario: funcSel, ano: anoSel, mes: mesSel + 1 });
+            const res = await fetch(`/sgrh/dados?${p}`);
+            const data = await res.json();
+            if(data.erro) { setStatus('error', '⚠️ ' + data.erro); return; }
+            preencherTabela('tbody-q1', data.q1 || []);
+            preencherTabela('tbody-q2', data.q2 || []);
+            setStatus('success', `✅ Dados carregados da planilha — ${MESES[mesSel]} / ${anoSel}`);
+            // salva como rascunho também
+            await salvarRascunho(false);
+            showToast('📥 Dados carregados da planilha!');
+        } catch(e) {
+            setStatus('error', '❌ Erro: ' + e.message);
+        } finally { esconderLoading(); }
+    }
+
+    // ── SALVAR NA PLANILHA ────────────────────────
+    async function salvarNaPlanilha() {
+        if(!funcSel) { showToast('⚠️ Selecione um funcionário'); return; }
+
+        mostrarLoading('Salvando na planilha Google...');
+        document.getElementById('btn-salvar').disabled = true;
+        try {
+            // Salva rascunho junto
+            await salvarRascunho(false);
+
+            const res = await fetch('/sgrh/salvar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    funcionario: funcSel,
+                    ano: anoSel,
+                    mes: mesSel + 1,
+                    q1: coletarLinhas('tbody-q1'),
+                    q2: coletarLinhas('tbody-q2'),
+                })
+            });
+            const data = await res.json();
+            if(data.ok) {
+                setStatus('success', '✅ Salvo com sucesso na planilha!');
+                showToast('✅ Dados salvos na planilha!');
+            } else {
+                setStatus('error', '❌ ' + (data.erro || 'Erro desconhecido'));
+                showToast('❌ Erro ao salvar.');
+            }
+        } catch(e) {
+            setStatus('error', '❌ Erro de conexão: ' + e.message);
+            showToast('❌ Erro de conexão.');
+        } finally {
+            esconderLoading();
+            document.getElementById('btn-salvar').disabled = false;
+        }
+    }
+
+    // ── COLETA / PREENCHE ─────────────────────────
+    function coletarLinhas(tbodyId) {
+        return Array.from(document.querySelectorAll(`#${tbodyId} tr`)).map(tr => {
+            const tds = tr.querySelectorAll('td');
+            return {
+                data:    tds[1]?.querySelector('input')?.value || '',
+                horario: tds[2]?.querySelector('input')?.value || '',
+                just:    tds[3]?.querySelector('select')?.value || '',
+                obs:     tds[4]?.querySelector('input')?.value || '',
+            };
+        });
+    }
+
+    function preencherTabela(tbodyId, linhas) {
+        const rows = document.querySelectorAll(`#${tbodyId} tr`);
+        linhas.forEach((l, i) => {
+            if(i >= rows.length) return;
+            const tds = rows[i].querySelectorAll('td');
+            tds[1].querySelector('input').value = l.data || '';
+            tds[2].querySelector('input').value = l.horario || '';
+            const sel = tds[3].querySelector('select');
+            sel.value = l.just || '';
+            colorirJust(sel);
+            tds[4].querySelector('input').value = l.obs || '';
+        });
+    }
+
+    // Auto-salva rascunho ao sair da página / trocar aba
+    window.addEventListener('beforeunload', () => {
+        if(funcSel) salvarRascunho(false);
+    });
+
+    // ── UI HELPERS ────────────────────────────────
+    function mostrarLoading(msg) {
+        document.getElementById('loading-msg').textContent = msg;
+        document.getElementById('loading-overlay').classList.add('show');
+    }
+    function esconderLoading() { document.getElementById('loading-overlay').classList.remove('show'); }
+
+    function setStatus(tipo, msg) {
+        const bar = document.getElementById('status-bar');
+        bar.className = 'status-bar show ' + tipo;
+        document.getElementById('status-msg').textContent = msg;
+        if(tipo === 'success' || tipo === 'info') setTimeout(() => bar.classList.remove('show'), 4500);
+    }
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg; t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    function mostrarDraftTag() { document.getElementById('draft-tag').style.display = 'inline-flex'; }
+    function esconderDraftTag() { document.getElementById('draft-tag').style.display = 'none'; }
+
+    init();
+</script>
+</body>
+</html>

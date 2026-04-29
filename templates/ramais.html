@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ramais</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Serif+Display&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1; --primary-hover: #4f46e5; --primary-light: #eef2ff;
+            --bg: #f1f5f9; --text-main: #1e293b; --text-muted: #64748b;
+            --border: #e2e8f0; --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.07);
+            --shadow-lg: 0 10px 30px rgba(0,0,0,0.10);
+            --danger: #ef4444; --danger-bg: #fee2e2;
+            --success: #22c55e; --sidebar-w: 260px;
+
+            /* paleta de cores dos cards por setor */
+            --c1: #6366f1; --c1l: #eef2ff;
+            --c2: #0ea5e9; --c2l: #e0f2fe;
+            --c3: #10b981; --c3l: #d1fae5;
+            --c4: #f59e0b; --c4l: #fef3c7;
+            --c5: #ec4899; --c5l: #fce7f3;
+            --c6: #8b5cf6; --c6l: #ede9fe;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text-main); min-height: 100vh; padding-bottom: 80px; }
+
+        /* ── SIDEBAR ── */
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.45); backdrop-filter: blur(2px); z-index: 200; }
+        .sidebar-overlay.open { display: block; }
+        .sidebar { position: fixed; top: 0; left: calc(-1 * var(--sidebar-w) - 10px); width: var(--sidebar-w); height: 100vh; background: white; z-index: 201; box-shadow: 4px 0 24px rgba(0,0,0,0.12); transition: left 0.3s cubic-bezier(0.4,0,0.2,1); display: flex; flex-direction: column; border-right: 1px solid var(--border); }
+        .sidebar.open { left: 0; }
+        .sidebar-head { padding: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .sidebar-logo { display: flex; align-items: center; gap: 10px; }
+        .logo-icon-sm { width: 34px; height: 34px; border-radius: 8px; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1rem; }
+        .sidebar-logo span { font-weight: 700; font-size: 0.95rem; }
+        .btn-close-sidebar { background: var(--bg); border: 1px solid var(--border); width: 30px; height: 30px; border-radius: 8px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; color: var(--text-muted); transition: 0.2s; }
+        .btn-close-sidebar:hover { background: var(--danger-bg); color: var(--danger); }
+        .sidebar-nav { flex: 1; overflow-y: auto; padding: 12px 0; }
+        .sidebar-section-label { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; padding: 12px 20px 6px; }
+        .sidebar-item { display: flex; align-items: center; gap: 12px; padding: 10px 20px; text-decoration: none; color: var(--text-main); font-size: 0.88rem; font-weight: 600; transition: 0.15s; border: none; background: none; width: 100%; text-align: left; }
+        .sidebar-item:hover { background: #f0f4ff; color: var(--primary); }
+        .sidebar-item.ativo { background: var(--primary-light); color: var(--primary); }
+        .sidebar-item .si-icon { font-size: 1.1rem; width: 22px; text-align: center; }
+        .sidebar-divider { height: 1px; background: var(--border); margin: 8px 20px; }
+        .sidebar-footer { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+        .avatar-sm { width: 34px; height: 34px; background: var(--primary-light); color: var(--primary); border: 2px solid var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; }
+        .sidebar-footer-info { flex: 1; }
+        .sidebar-footer-info b { font-size: 0.82rem; display: block; }
+        .sidebar-footer-info small { font-size: 0.7rem; color: var(--text-muted); }
+        .btn-logout-sidebar { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; text-decoration: none; }
+        .btn-logout-sidebar:hover { color: var(--danger); }
+
+        /* ── NAVBAR ── */
+        header.navbar { background: white; padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+        .nav-left { display: flex; align-items: center; gap: 12px; }
+        .btn-menu { background: var(--bg); border: 1.5px solid var(--border); width: 38px; height: 38px; border-radius: 10px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: 0.2s; color: var(--text-main); }
+        .btn-menu:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+        .logo-icon { background: var(--primary); color: white; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; }
+        .nav-left h1 { font-size: 1.1rem; margin: 0; }
+        .nav-left p { font-size: 0.85rem; color: var(--text-muted); margin: 0; }
+        .nav-right { display: flex; align-items: center; gap: 12px; }
+        .avatar { width: 40px; height: 40px; background: var(--primary-light); color: var(--primary); border: 2px solid var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+
+        /* ── MAIN ── */
+        .main { max-width: 1200px; margin: 0 auto; padding: 36px 40px; }
+        @media (max-width: 700px) { .main { padding: 20px 16px; } header.navbar { padding: 12px 16px; } }
+
+        /* ── HERO ── */
+        .hero { background: linear-gradient(135deg, #6366f1 0%, #818cf8 50%, #a5b4fc 100%); border-radius: 20px; padding: 36px 40px; margin-bottom: 32px; display: flex; align-items: center; justify-content: space-between; gap: 24px; position: relative; overflow: hidden; }
+        .hero::before { content: ''; position: absolute; right: -40px; top: -40px; width: 200px; height: 200px; background: rgba(255,255,255,0.08); border-radius: 50%; }
+        .hero::after  { content: ''; position: absolute; right: 60px; bottom: -60px; width: 150px; height: 150px; background: rgba(255,255,255,0.06); border-radius: 50%; }
+        .hero-text h2 { font-family: 'Arial', serif; font-size: 1.9rem; color: white; margin-bottom: 6px; }
+        .hero-text p  { font-size: 0.88rem; color: rgba(255,255,255,0.8); }
+        .hero-stats   { display: flex; gap: 24px; z-index: 1; }
+        .hero-stat    { text-align: center; }
+        .hero-stat-val  { font-size: 2rem; font-weight: 800; color: white; display: block; line-height: 1; }
+        .hero-stat-lbl  { font-size: 0.72rem; color: rgba(255,255,255,0.75); font-weight: 600; margin-top: 4px; display: block; }
+        @media (max-width: 600px) { .hero { flex-direction: column; align-items: flex-start; } }
+
+        /* ── TOOLBAR ── */
+        .toolbar { display: flex; gap: 12px; margin-bottom: 28px; flex-wrap: wrap; align-items: center; }
+        .search-wrap { display: flex; align-items: center; gap: 10px; background: white; border: 1.5px solid var(--border); border-radius: 12px; padding: 0 16px; flex: 1; min-width: 200px; transition: 0.2s; }
+        .search-wrap:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+        .search-wrap input { background: none; border: none; outline: none; font-family: inherit; font-size: 0.88rem; padding: 11px 0; width: 100%; color: var(--text-main); }
+        .search-wrap input::placeholder { color: var(--text-muted); }
+        .btn-add { background: var(--primary); color: white; border: none; padding: 11px 22px; border-radius: 12px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.88rem; transition: all 0.2s; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+        .btn-add:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,0.35); }
+
+        /* ── SETOR GROUP ── */
+        .setor-group { margin-bottom: 32px; }
+        .setor-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+        .setor-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+        .setor-badge { background: var(--primary-light); color: var(--primary); font-size: 0.65rem; padding: 2px 8px; border-radius: 20px; font-weight: 700; }
+
+        /* ── GRID ── */
+        .ramais-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+
+        /* ── CARD ── */
+        .ramal-card {
+            background: white;
+            border-radius: 16px;
+            border: 1.5px solid var(--border);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: all 0.2s;
+            position: relative;
+            cursor: default;
+        }
+        .ramal-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+            border-color: transparent;
+        }
+
+        /* topo colorido */
+        .card-top {
+            height: 6px;
+            width: 100%;
+        }
+
+        .card-body { padding: 20px 20px 16px; }
+
+        /* iniciais / avatar */
+        .card-avatar {
+            width: 48px; height: 48px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 1.1rem;
+            margin-bottom: 14px;
+            letter-spacing: -0.5px;
+        }
+
+        .card-nome {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 3px;
+            line-height: 1.2;
+        }
+        .card-cargo {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-bottom: 14px;
+        }
+
+        /* número do ramal — destaque */
+        .card-ramal-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg);
+            border-radius: 10px;
+            padding: 10px 14px;
+        }
+        .card-ramal-num {
+            font-family: 'Arial', serif;
+            font-size: 1.6rem;
+            letter-spacing: 0.04em;
+            line-height: 1;
+        }
+        .btn-copy {
+            background: white;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            width: 32px; height: 32px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 0.85rem;
+            transition: all 0.15s;
+            color: var(--text-muted);
+        }
+        .btn-copy:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+        .btn-copy.copiado { border-color: var(--success); color: var(--success); background: #dcfce7; }
+
+        /* botão deletar — aparece no hover */
+        .btn-del {
+            position: absolute; top: 14px; right: 14px;
+            background: white; border: 1.5px solid var(--border);
+            border-radius: 8px; width: 28px; height: 28px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 0.75rem;
+            color: var(--text-muted); opacity: 0;
+            transition: all 0.15s;
+        }
+        .ramal-card:hover .btn-del { opacity: 1; }
+        .btn-del:hover { background: var(--danger-bg); color: var(--danger); border-color: var(--danger); }
+
+        /* ── EMPTY ── */
+        .empty { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+        .empty-icon { font-size: 3rem; display: block; margin-bottom: 14px; opacity: .4; }
+
+        /* ── MODAL ── */
+        .overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.5); backdrop-filter: blur(3px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; opacity: 0; pointer-events: none; transition: opacity .2s; }
+        .overlay.open { opacity: 1; pointer-events: all; }
+        .modal { background: white; border-radius: 20px; width: 100%; max-width: 440px; box-shadow: var(--shadow-lg); transform: translateY(20px); transition: transform .25s; overflow: hidden; }
+        .overlay.open .modal { transform: translateY(0); }
+        .modal-banner { background: linear-gradient(135deg, var(--primary), #818cf8); padding: 24px 28px; }
+        .modal-banner h3 { color: white; font-size: 1.1rem; font-weight: 800; }
+        .modal-banner p  { color: rgba(255,255,255,0.8); font-size: 0.82rem; margin-top: 3px; }
+        .modal-body { padding: 24px 28px; display: flex; flex-direction: column; gap: 14px; }
+        .field-label { font-size: 0.72rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; display: block; margin-bottom: 6px; }
+        .field-input { width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-family: inherit; font-size: 0.9rem; outline: none; transition: 0.2s; }
+        .field-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+        .modal-footer { padding: 0 28px 24px; display: flex; gap: 10px; justify-content: flex-end; }
+        .btn-cancel { background: var(--bg); border: 1.5px solid var(--border); color: var(--text-muted); padding: 10px 18px; border-radius: 10px; cursor: pointer; font-weight: 700; font-family: inherit; font-size: 0.85rem; }
+        .btn-save { background: var(--primary); color: white; border: none; padding: 10px 22px; border-radius: 10px; cursor: pointer; font-weight: 700; font-family: inherit; font-size: 0.85rem; transition: all 0.2s; }
+        .btn-save:hover { background: var(--primary-hover); }
+
+        /* ── CLOCK ── */
+        .clock-footer { position: fixed; bottom: 20px; right: 20px; background: white; padding: 8px 16px; border-radius: 30px; border: 1px solid var(--border); box-shadow: var(--shadow); font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px; z-index: 99; }
+        .clock-dot { width: 6px; height: 6px; background: var(--primary); border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+
+        /* ── TOAST ── */
+        .toast { position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%) translateY(10px); background: #1e293b; color: white; padding: 10px 24px; border-radius: 30px; font-size: 0.85rem; font-weight: 600; z-index: 9999; opacity: 0; transition: all .3s; pointer-events: none; white-space: nowrap; }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+        <div class="sidebar-logo"><div class="logo-icon-sm">🌳</div><span>Menu</span></div>
+        <button class="btn-close-sidebar" onclick="closeSidebar()">✕</button>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="sidebar-section-label">Principal</div>
+        <a class="sidebar-item" href="/dashboard"><span class="si-icon">🏠</span> Dashboard</a>
+        <a class="sidebar-item" href="/horas"><span class="si-icon">📅</span> Banco de Horas</a>
+        <a class="sidebar-item" href="/sgrh"><span class="si-icon">📄</span> SGRH</a>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-section-label">Ferramentas</div>
+        <a class="sidebar-item" href="/ocorrencias"><span class="si-icon">📋</span> Solicitações</a>
+        <a class="sidebar-item" href="/equipe"><span class="si-icon">👥</span> Nossa Equipe</a>
+        <a class="sidebar-item ativo" href="/ramais"><span class="si-icon">📞</span> Ramais</a>
+        <a class="sidebar-item" href="/ci"><span class="si-icon">📄</span> CI</a>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-section-label">Agenda</div>
+        <a class="sidebar-item" href="/calendario_letivo"><span class="si-icon">🗓️</span> Calendário Letivo</a>
+        <a class="sidebar-item" href="/hub"><span class="si-icon">🔗</span> HUB</a>
+        <a class="sidebar-item" href="/evento"><span class="si-icon">🎯</span> Eventos</a>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-section-label">Conteúdo</div>
+        <a class="sidebar-item" href="/repositorio"><span class="si-icon">📁</span> Repositório</a>
+        <a class="sidebar-item" href="/avisos"><span class="si-icon">📌</span> Avisos Fixos</a>
+        <a class="sidebar-item" href="/atas"><span class="si-icon">📝</span> Atas de Reunião</a>
+        <div class="sidebar-section-label">Relatórios</div>
+        <a class="sidebar-item" href="/relatorios"><span class="si-icon">🖨️</span> Relatórios</a>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="avatar-sm">{{ nome[0] }}</div>
+        <div class="sidebar-footer-info"><b>{{ nome }}</b><small>{{ cargo | capitalize }}</small></div>
+        <a href="/logout" class="btn-logout-sidebar">⏻</a>
+    </div>
+</aside>
+
+<!-- NAVBAR -->
+<header class="navbar">
+    <div class="nav-left">
+        <button class="btn-menu" onclick="openSidebar()">☰</button>
+        <div class="logo-icon">🌳</div>
+        <div><h1>📞 Ramais</h1><p>Lista de ramais do setor</p></div>
+    </div>
+    <div class="nav-right">
+        <div style="display:flex;flex-direction:column;align-items:flex-end">
+            <span style="font-size:0.9rem;font-weight:600">{{ nome }}</span>
+            <span style="font-size:0.75rem;color:var(--success)">Online</span>
+        </div>
+        <div class="avatar">{{ nome[0] }}</div>
+        <a href="/logout" style="font-size:0.8rem;color:var(--text-muted);text-decoration:none">Sair</a>
+    </div>
+</header>
+
+<main class="main">
+
+    <!-- HERO -->
+    <div class="hero">
+        <div class="hero-text">
+            <h2>Central de Ramais</h2>
+            <p>Encontre e copie qualquer ramal em segundos</p>
+        </div>
+        <div class="hero-stats">
+            <div class="hero-stat">
+                <span class="hero-stat-val" id="stat-total">—</span>
+                <span class="hero-stat-lbl">Ramais</span>
+            </div>
+            <div class="hero-stat">
+                <span class="hero-stat-val" id="stat-setores">—</span>
+                <span class="hero-stat-lbl">Setores</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+        <div class="search-wrap">
+            <span style="color:var(--text-muted)">🔍</span>
+            <input type="text" id="search-input" placeholder="Buscar por nome, ramal ou setor..." oninput="filtrar()">
+        </div>
+        {% if cargo == 'chefe' %}
+        <button class="btn-add" onclick="abrirModal()">＋ Adicionar Ramal</button>
+        {% endif %}
+    </div>
+
+    <!-- CONTEÚDO -->
+    <div id="ramais-container">
+        <div class="empty"><span class="empty-icon">⏳</span><p>Carregando ramais...</p></div>
+    </div>
+
+</main>
+
+<!-- MODAL -->
+<div class="overlay" id="modal-overlay" onclick="fecharModalSeFora(event)">
+    <div class="modal">
+        <div class="modal-banner">
+            <h3>📞 Novo Ramal</h3>
+            <p>Preencha os dados para adicionar ao diretório</p>
+        </div>
+        <div class="modal-body">
+            <div>
+                <label class="field-label">Nome completo *</label>
+                <input class="field-input" type="text" id="r-nome" placeholder="Ex: João Silva">
+            </div>
+            <div>
+                <label class="field-label">Número do ramal *</label>
+                <input class="field-input" type="text" id="r-num" placeholder="Ex: 2210">
+            </div>
+            <div>
+                <label class="field-label">Cargo</label>
+                <input class="field-input" type="text" id="r-cargo" placeholder="Ex: Analista Administrativo">
+            </div>
+            <div>
+                <label class="field-label">Setor</label>
+                <input class="field-input" type="text" id="r-setor" placeholder="Ex: RH, Financeiro, TI...">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="fecharModal()">Cancelar</button>
+            <button class="btn-save" onclick="salvarRamal()">Salvar Ramal</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="clock-footer"><div class="clock-dot"></div><span id="real-time">00:00:00</span></div>
+
+<script>
+    const CARGO = "{{ cargo }}";
+
+    // paleta de cores para setores (roda)
+    const PALETA = [
+        { cor: '#6366f1', bg: '#eef2ff' },
+        { cor: '#0ea5e9', bg: '#e0f2fe' },
+        { cor: '#10b981', bg: '#d1fae5' },
+        { cor: '#f59e0b', bg: '#fef3c7' },
+        { cor: '#ec4899', bg: '#fce7f3' },
+        { cor: '#8b5cf6', bg: '#ede9fe' },
+        { cor: '#14b8a6', bg: '#ccfbf1' },
+        { cor: '#f97316', bg: '#ffedd5' },
+    ];
+    const corSetor = {};
+    let paletaIdx  = 0;
+
+    function getCorSetor(setor) {
+        if (!corSetor[setor]) {
+            corSetor[setor] = PALETA[paletaIdx % PALETA.length];
+            paletaIdx++;
+        }
+        return corSetor[setor];
+    }
+
+    function iniciais(nome) {
+        return nome.trim().split(/\s+/).slice(0, 2).map(p => p[0]).join('').toUpperCase();
+    }
+
+    let todosRamais = [];
+
+    // ── sidebar/utils ──
+    function openSidebar()  { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('open'); }
+    function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.remove('open'); }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeSidebar(); fecharModal(); } });
+    setInterval(() => { document.getElementById('real-time').textContent = new Date().toLocaleTimeString('pt-BR'); }, 1000);
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg; t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2800);
+    }
+
+    // ── modal ──
+    function abrirModal() { document.getElementById('modal-overlay').classList.add('open'); }
+    function fecharModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+    function fecharModalSeFora(e) { if (e.target === document.getElementById('modal-overlay')) fecharModal(); }
+
+    // ── carregar ──
+    async function carregarRamais() {
+        try {
+            const res   = await fetch('/ramais/dados');
+            todosRamais = await res.json();
+            renderRamais(todosRamais);
+        } catch {
+            document.getElementById('ramais-container').innerHTML =
+                '<div class="empty"><span class="empty-icon">⚠️</span><p>Erro ao carregar ramais.</p></div>';
+        }
+    }
+
+    // ── render ──
+    function renderRamais(lista) {
+        const container = document.getElementById('ramais-container');
+
+        document.getElementById('stat-total').textContent   = lista.length;
+        document.getElementById('stat-setores').textContent = new Set(lista.map(r => r.setor || 'Geral')).size;
+
+        if (!lista.length) {
+            container.innerHTML = '<div class="empty"><span class="empty-icon">📞</span><p>Nenhum ramal encontrado.</p></div>';
+            return;
+        }
+
+        // Agrupa por setor
+        const porSetor = {};
+        lista.forEach(r => {
+            const s = (r.setor || 'Geral').trim();
+            if (!porSetor[s]) porSetor[s] = [];
+            porSetor[s].push(r);
+        });
+
+        container.innerHTML = Object.entries(porSetor).map(([setor, items]) => {
+            const { cor, bg } = getCorSetor(setor);
+            return `
+            <div class="setor-group">
+                <div class="setor-label">
+                    🏢 ${setor}
+                    <span class="setor-badge">${items.length} ${items.length === 1 ? 'ramal' : 'ramais'}</span>
+                </div>
+                <div class="ramais-grid">
+                    ${items.map(r => cardHTML(r, cor, bg)).join('')}
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function cardHTML(r, cor, bg) {
+        const ini = iniciais(r.nome);
+        const delBtn = CARGO === 'chefe'
+            ? `<button class="btn-del" onclick="deletarRamal(${r.id})" title="Remover">🗑️</button>`
+            : '';
+        return `
+        <div class="ramal-card">
+            <div class="card-top" style="background:${cor}"></div>
+            <div class="card-body">
+                <div class="card-avatar" style="background:${bg};color:${cor}">${ini}</div>
+                <div class="card-nome">${escHtml(r.nome)}</div>
+                <div class="card-cargo">${escHtml(r.cargo || '')}</div>
+                <div class="card-ramal-wrap">
+                    <span class="card-ramal-num" style="color:${cor}">${escHtml(r.ramal)}</span>
+                    <button class="btn-copy" onclick="copiar(this,'${escHtml(r.ramal)}')" title="Copiar ramal">📋</button>
+                </div>
+            </div>
+            ${delBtn}
+        </div>`;
+    }
+
+    // ── filtro ──
+    function filtrar() {
+        const q = document.getElementById('search-input').value.toLowerCase();
+        renderRamais(todosRamais.filter(r =>
+            r.nome.toLowerCase().includes(q) ||
+            String(r.ramal).includes(q) ||
+            (r.setor || '').toLowerCase().includes(q) ||
+            (r.cargo || '').toLowerCase().includes(q)
+        ));
+    }
+
+    // ── copiar ──
+    function copiar(btn, ramal) {
+        navigator.clipboard.writeText(ramal).then(() => {
+            btn.textContent = '✅';
+            btn.classList.add('copiado');
+            showToast(`📋 Ramal ${ramal} copiado!`);
+            setTimeout(() => { btn.textContent = '📋'; btn.classList.remove('copiado'); }, 2000);
+        });
+    }
+
+    // ── salvar ──
+    async function salvarRamal() {
+        const nome  = document.getElementById('r-nome').value.trim();
+        const ramal = document.getElementById('r-num').value.trim();
+        const cargo = document.getElementById('r-cargo').value.trim();
+        const setor = document.getElementById('r-setor').value.trim() || 'Geral';
+        if (!nome || !ramal) return showToast('⚠️ Nome e ramal são obrigatórios');
+
+        const res  = await fetch('/ramais', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome, ramal, cargo, setor })
+        });
+        const json = await res.json();
+        if (json.ok) {
+            fecharModal();
+            ['r-nome','r-num','r-cargo','r-setor'].forEach(id => document.getElementById(id).value = '');
+            showToast('✅ Ramal adicionado!');
+            await carregarRamais();
+        } else {
+            showToast('❌ ' + (json.erro || 'Erro ao salvar.'));
+        }
+    }
+
+    // ── deletar ──
+    async function deletarRamal(id) {
+        if (!confirm('Remover este ramal?')) return;
+        const res  = await fetch(`/ramais/${id}`, { method: 'DELETE' });
+        const json = await res.json();
+        if (json.ok) { showToast('🗑️ Ramal removido.'); await carregarRamais(); }
+        else           showToast('❌ ' + (json.erro || 'Erro.'));
+    }
+
+    function escHtml(s) {
+        return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    carregarRamais();
+</script>
+</body>
+</html>

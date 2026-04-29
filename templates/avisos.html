@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avisos Fixos</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1; --primary-hover: #4f46e5;
+            --bg: #f1f5f9; --card-bg: #ffffff;
+            --text-main: #1e293b; --text-muted: #64748b;
+            --border: #e2e8f0; --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --danger: #ef4444; --danger-bg: #fee2e2;
+            --success: #22c55e; --warning: #f59e0b;
+            --sidebar-w: 260px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background: var(--bg); color: var(--text-main); line-height: 1.5; }
+
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.45); backdrop-filter: blur(2px); z-index: 200; }
+        .sidebar-overlay.open { display: block; }
+        .sidebar { position: fixed; top: 0; left: calc(-1 * var(--sidebar-w) - 10px); width: var(--sidebar-w); height: 100vh; background: white; z-index: 201; box-shadow: 4px 0 24px rgba(0,0,0,0.12); transition: left 0.3s cubic-bezier(0.4,0,0.2,1); display: flex; flex-direction: column; border-right: 1px solid var(--border); }
+        .sidebar.open { left: 0; }
+        .sidebar-head { padding: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .sidebar-logo { display: flex; align-items: center; gap: 10px; }
+        .logo-icon-sm { width: 34px; height: 34px; border-radius: 8px; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1rem; }
+        .sidebar-logo span { font-weight: 700; font-size: 0.95rem; }
+        .btn-close-sidebar { background: var(--bg); border: 1px solid var(--border); width: 30px; height: 30px; border-radius: 8px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; color: var(--text-muted); transition: 0.2s; }
+        .btn-close-sidebar:hover { background: var(--danger-bg); color: var(--danger); }
+        .sidebar-nav { flex: 1; overflow-y: auto; padding: 12px 0; }
+        .sidebar-section-label { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; padding: 12px 20px 6px; }
+        .sidebar-item { display: flex; align-items: center; gap: 12px; padding: 10px 20px; text-decoration: none; color: var(--text-main); font-size: 0.88rem; font-weight: 600; transition: 0.15s; cursor: pointer; border: none; background: none; width: 100%; text-align: left; }
+        .sidebar-item:hover { background: #f0f4ff; color: var(--primary); }
+        .sidebar-item.ativo { background: #eef2ff; color: var(--primary); }
+        .sidebar-item .si-icon { font-size: 1.1rem; width: 22px; text-align: center; }
+        .sidebar-divider { height: 1px; background: var(--border); margin: 8px 20px; }
+        .sidebar-footer { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+        .avatar-sm { width: 34px; height: 34px; background: #eef2ff; color: var(--primary); border: 2px solid var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; }
+        .sidebar-footer-info { flex: 1; }
+        .sidebar-footer-info b { font-size: 0.82rem; display: block; }
+        .sidebar-footer-info small { font-size: 0.7rem; color: var(--text-muted); }
+        .btn-logout-sidebar { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; text-decoration: none; }
+        .btn-logout-sidebar:hover { color: var(--danger); }
+
+        header.navbar { background: #fff; padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+        .nav-left { display: flex; align-items: center; gap: 12px; }
+        .btn-menu { background: var(--bg); border: 1.5px solid var(--border); width: 38px; height: 38px; border-radius: 10px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .btn-menu:hover { background: #eef2ff; border-color: var(--primary); color: var(--primary); }
+        .logo-icon { background: var(--primary); color: white; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; }
+        .nav-left h1 { font-size: 1.1rem; margin: 0; }
+        .nav-left p { font-size: 0.85rem; color: var(--text-muted); margin: 0; }
+        .nav-right { display: flex; align-items: center; gap: 12px; }
+        .avatar { width: 40px; height: 40px; background: #eef2ff; color: var(--primary); border: 2px solid var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+        .user-name { font-size: 0.9rem; font-weight: 600; }
+        .user-status { font-size: 0.75rem; color: var(--success); }
+
+        .page-content { max-width: 1100px; margin: 0 auto; padding: 40px; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+        .page-title { font-size: 1.4rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+        .btn-new { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; font-family: inherit; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
+        .btn-new:hover { background: var(--primary-hover); }
+
+        /* Avisos grid - masonry */
+        .avisos-grid { column-count: 3; column-gap: 20px; }
+        @media(max-width:900px) { .avisos-grid { column-count: 2; } }
+        @media(max-width:600px) { .avisos-grid { column-count: 1; } }
+
+        .aviso-card { break-inside: avoid; display: inline-block; width: 100%; margin-bottom: 20px; background: white; border-radius: 14px; border: 1px solid var(--border); box-shadow: var(--shadow); padding: 20px; position: relative; transition: 0.2s; }
+        .aviso-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        .aviso-card.prioridade-alta { border-left: 4px solid var(--danger); }
+        .aviso-card.prioridade-media { border-left: 4px solid var(--warning); }
+        .aviso-card.prioridade-baixa { border-left: 4px solid var(--success); }
+
+        .aviso-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .aviso-titulo { font-size: 0.95rem; font-weight: 700; color: var(--text-main); flex: 1; padding-right: 8px; }
+        .badge-prioridade { font-size: 0.65rem; font-weight: 800; padding: 3px 8px; border-radius: 20px; white-space: nowrap; }
+        .badge-alta { background: #fee2e2; color: #991b1b; }
+        .badge-media { background: #fef3c7; color: #92400e; }
+        .badge-baixa { background: #dcfce7; color: #166534; }
+
+        .aviso-texto { font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; white-space: pre-wrap; margin-bottom: 14px; }
+        .aviso-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 10px; }
+        .aviso-autor { font-size: 0.72rem; font-weight: 700; color: var(--primary); }
+        .aviso-data { font-size: 0.7rem; color: var(--text-muted); }
+        .btn-del-aviso { background: var(--danger-bg); color: var(--danger); border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.7rem; font-weight: 600; font-family: inherit; }
+
+        .pin-icon { position: absolute; top: -6px; right: 16px; font-size: 1.2rem; }
+
+        .empty-state { text-align: center; padding: 60px; color: var(--text-muted); }
+        .empty-state .es-icon { font-size: 3rem; margin-bottom: 12px; }
+
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-overlay.open { display: flex; }
+        .modal-card { background: white; width: 90%; max-width: 500px; border-radius: 16px; padding: 24px; }
+        .modal-card h3 { margin-bottom: 16px; }
+        .modal-card input, .modal-card textarea, .modal-card select { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 0.9rem; outline: none; }
+        .modal-card input:focus, .modal-card textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+        .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+        .btn-cancel { background: var(--bg); border: 1px solid var(--border); color: var(--text-muted); padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; font-family: inherit; }
+        .field-label { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block; text-transform: uppercase; letter-spacing: 0.04em; }
+
+        .toast { position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 10px 20px; border-radius: 30px; font-size: 0.85rem; font-weight: 600; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        .toast.show { opacity: 1; }
+        .clock-footer { position: fixed; bottom: 20px; right: 20px; background: white; padding: 8px 16px; border-radius: 30px; border: 1px solid var(--border); box-shadow: var(--shadow); font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px; z-index: 99; }
+        .clock-dot { width: 6px; height: 6px; background: var(--primary); border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+    </style>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+        <div class="sidebar-logo"><div class="logo-icon-sm">🌳</div><span>Menu</span></div>
+        <button class="btn-close-sidebar" onclick="closeSidebar()">✕</button>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="sidebar-section-label">Principal</div>
+        <a class="sidebar-item" href="/dashboard"><span class="si-icon">🏠</span> Dashboard</a>
+        <a class="sidebar-item" href="/horas"><span class="si-icon">📅</span> Banco de Horas</a>
+        <a class="sidebar-item" href="/sgrh"><span class="si-icon">📄</span> SGRH</a>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-section-label">Ferramentas</div>
+        <a class="sidebar-item" href="/solicitacoes"><span class="si-icon">📋</span> Solicitações</a>
+        <a class="sidebar-item" href="/equipe"><span class="si-icon">👥</span> Nossa Equipe</a>
+        <a class="sidebar-item" href="/ramais"><span class="si-icon">📞</span> Ramais</a>
+        <a class="sidebar-item" href="/ci"><span class="si-icon">📄</span> CI</a>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-section-label">Conteúdo</div>
+        <a class="sidebar-item" href="/repositorio"><span class="si-icon">📁</span> Repositório</a>
+        <a class="sidebar-item ativo" href="/avisos"><span class="si-icon">📌</span> Avisos Fixos</a>
+        <a class="sidebar-item" href="/atas"><span class="si-icon">📝</span> Atas de Reunião</a>
+        <a class="sidebar-item" href="/ocorrencias"><span class="si-icon">🚨</span> Ocorrências</a>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="avatar-sm">{{ nome[0] }}</div>
+        <div class="sidebar-footer-info"><b>{{ nome }}</b><small>{{ cargo | capitalize }}</small></div>
+        <a href="/logout" class="btn-logout-sidebar">⏻</a>
+    </div>
+</aside>
+
+<header class="navbar">
+    <div class="nav-left">
+        <button class="btn-menu" onclick="openSidebar()">☰</button>
+        <div class="logo-icon">🌳</div>
+        <div><h1>Avisos Fixos</h1><p>Informativos permanentes do setor</p></div>
+    </div>
+    <div class="nav-right">
+        <div style="display:flex;flex-direction:column;align-items:flex-end">
+            <span class="user-name">{{ nome }}</span>
+            <span class="user-status">Online</span>
+        </div>
+        <div class="avatar">{{ nome[0] }}</div>
+        <a href="/logout" style="font-size:0.8rem;color:var(--text-muted);text-decoration:none">Sair</a>
+    </div>
+</header>
+
+<div class="page-content">
+    <div class="page-header">
+        <div class="page-title">📌 Avisos Fixos</div>
+        {% if cargo == "chefe" %}
+        <button class="btn-new" onclick="openModal('modal-aviso')">+ Novo Aviso</button>
+        {% endif %}
+    </div>
+    <div class="avisos-grid" id="avisos-grid">
+        <p style="color:var(--text-muted)">Carregando...</p>
+    </div>
+</div>
+
+{% if cargo == "chefe" %}
+<div class="modal-overlay" id="modal-aviso">
+    <div class="modal-card">
+        <h3>Novo Aviso Fixo</h3>
+        <span class="field-label">Título</span>
+        <input type="text" id="av-titulo" placeholder="Ex: Procedimento de Ponto">
+        <span class="field-label">Conteúdo</span>
+        <textarea id="av-texto" rows="5" placeholder="Descreva o aviso..."></textarea>
+        <span class="field-label">Prioridade</span>
+        <select id="av-prioridade">
+            <option value="alta">🔴 Alta</option>
+            <option value="media" selected>🟡 Média</option>
+            <option value="baixa">🟢 Baixa</option>
+        </select>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeModal('modal-aviso')">Cancelar</button>
+            <button class="btn-new" onclick="salvarAviso()">Publicar</button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="toast" id="toast"></div>
+<div class="clock-footer"><div class="clock-dot"></div><span id="real-time">00:00:00</span></div>
+
+<script>
+    const NOME = "{{ nome }}";
+    const CARGO = "{{ cargo }}";
+
+    function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('open'); }
+    function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.remove('open'); }
+    function openModal(id) { document.getElementById(id).classList.add('open'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+    window.onclick = e => { if(e.target.classList.contains('modal-overlay')) e.target.classList.remove('open'); };
+    document.addEventListener('keydown', e => { if(e.key==='Escape') closeSidebar(); });
+    setInterval(() => { document.getElementById('real-time').textContent = new Date().toLocaleTimeString('pt-BR'); }, 1000);
+    function showToast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+
+    async function carregarAvisos() {
+        const res = await fetch('/avisos/dados');
+        const lista = await res.json();
+        renderAvisos(lista);
+    }
+
+    function renderAvisos(lista) {
+        const grid = document.getElementById('avisos-grid');
+        if(!lista.length) { grid.innerHTML = '<div class="empty-state"><div class="es-icon">📌</div><p>Nenhum aviso publicado.</p></div>'; return; }
+        const pmap = { alta: { badge: 'badge-alta', txt: '🔴 Alta' }, media: { badge: 'badge-media', txt: '🟡 Média' }, baixa: { badge: 'badge-baixa', txt: '🟢 Baixa' } };
+        grid.innerHTML = lista.map(a => {
+            const p = pmap[a.prioridade] || pmap.media;
+            const data = new Date(a.criado_em).toLocaleDateString('pt-BR');
+            return `<div class="aviso-card prioridade-${a.prioridade}">
+                <div class="pin-icon">📌</div>
+                <div class="aviso-top">
+                    <div class="aviso-titulo">${a.titulo}</div>
+                    <span class="badge-prioridade ${p.badge}">${p.txt}</span>
+                </div>
+                <div class="aviso-texto">${a.texto}</div>
+                <div class="aviso-footer">
+                    <span class="aviso-autor">👤 ${a.autor}</span>
+                    <span class="aviso-data">${data}</span>
+                    ${CARGO==='chefe'?`<button class="btn-del-aviso" onclick="deletarAviso(${a.id})">Excluir</button>`:''}
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    async function salvarAviso() {
+        const titulo = document.getElementById('av-titulo').value.trim();
+        const texto = document.getElementById('av-texto').value.trim();
+        const prioridade = document.getElementById('av-prioridade').value;
+        if(!titulo||!texto) return showToast('⚠️ Preencha título e conteúdo');
+        await fetch('/avisos', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({titulo,texto,prioridade}) });
+        closeModal('modal-aviso');
+        ['av-titulo','av-texto'].forEach(id => document.getElementById(id).value='');
+        showToast('✅ Aviso publicado!');
+        await carregarAvisos();
+    }
+
+    async function deletarAviso(id) {
+        if(!confirm('Excluir aviso?')) return;
+        await fetch(`/avisos/${id}`, {method:'DELETE'});
+        showToast('🗑️ Removido!');
+        await carregarAvisos();
+    }
+
+    carregarAvisos();
+</script>
+</body>
+</html>

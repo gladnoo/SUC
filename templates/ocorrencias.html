@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solicitações</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --primary-light: #eef2ff;
+            --bg: #f1f5f9;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            --shadow-lg: 0 10px 30px rgba(0,0,0,0.10);
+            --danger: #ef4444;
+            --danger-bg: #fee2e2;
+            --success: #22c55e;
+            --success-bg: #dcfce7;
+            --warning: #f59e0b;
+            --warning-bg: #fef3c7;
+            --sidebar-w: 260px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background: var(--bg); color: var(--text-main); line-height: 1.5; padding-bottom: 100px; }
+
+        /* ── SIDEBAR ── */
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.45); backdrop-filter: blur(2px); z-index: 200; }
+        .sidebar-overlay.open { display: block; }
+        .sidebar { position: fixed; top: 0; left: calc(-1 * var(--sidebar-w) - 10px); width: var(--sidebar-w); height: 100vh; background: white; z-index: 201; box-shadow: 4px 0 24px rgba(0,0,0,0.12); transition: left 0.3s cubic-bezier(0.4,0,0.2,1); display: flex; flex-direction: column; border-right: 1px solid var(--border); }
+        .sidebar.open { left: 0; }
+        .sidebar-head { padding: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .sidebar-logo { display: flex; align-items: center; gap: 10px; }
+        .logo-icon-sm { width: 34px; height: 34px; border-radius: 8px; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1rem; }
+        .sidebar-logo span { font-weight: 700; font-size: 0.95rem; }
+        .btn-close-sidebar { background: var(--bg); border: 1px solid var(--border); width: 30px; height: 30px; border-radius: 8px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; color: var(--text-muted); transition: 0.2s; }
+        .btn-close-sidebar:hover { background: var(--danger-bg); color: var(--danger); }
+        .sidebar-nav { flex: 1; overflow-y: auto; padding: 12px 0; }
+        .sidebar-section-label { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; padding: 12px 20px 6px; }
+        .sidebar-item { display: flex; align-items: center; gap: 12px; padding: 10px 20px; text-decoration: none; color: var(--text-main); font-size: 0.88rem; font-weight: 600; transition: 0.15s; cursor: pointer; border: none; background: none; width: 100%; text-align: left; }
+        .sidebar-item:hover { background: #f0f4ff; color: var(--primary); }
+        .sidebar-item.ativo { background: var(--primary-light); color: var(--primary); }
+        .sidebar-item .si-icon { font-size: 1.1rem; width: 22px; text-align: center; }
+        .sidebar-divider { height: 1px; background: var(--border); margin: 8px 20px; }
+        .sidebar-footer { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+        .avatar-sm { width: 34px; height: 34px; background: var(--primary-light); color: var(--primary); border: 2px solid var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; }
+        .sidebar-footer-info { flex: 1; }
+        .sidebar-footer-info b { font-size: 0.82rem; display: block; }
+        .sidebar-footer-info small { font-size: 0.7rem; color: var(--text-muted); }
+        .btn-logout-sidebar { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; transition: 0.2s; text-decoration: none; }
+        .btn-logout-sidebar:hover { color: var(--danger); }
+
+        /* ── NAVBAR ── */
+        header.navbar { background: white; padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+        .nav-left { display: flex; align-items: center; gap: 12px; }
+        .btn-menu { background: var(--bg); border: 1.5px solid var(--border); width: 38px; height: 38px; border-radius: 10px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: 0.2s; color: var(--text-main); }
+        .btn-menu:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+        .logo-icon { background: var(--primary); color: white; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; }
+        .nav-left h1 { font-size: 1.1rem; margin: 0; }
+        .nav-left p { font-size: 0.85rem; color: var(--text-muted); margin: 0; }
+        .nav-right { display: flex; align-items: center; gap: 12px; }
+        .avatar { width: 40px; height: 40px; background: var(--primary-light); color: var(--primary); border: 2px solid var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+        .btn-new { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 8px; font-family: inherit; font-size: 0.9rem; }
+        .btn-new:hover { background: var(--primary-hover); transform: translateY(-1px); }
+
+        /* ── PAGE ── */
+        .page { max-width: 1200px; margin: 0 auto; padding: 36px 40px; }
+
+        /* ── STATS ── */
+        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+        .stat-card { background: white; border-radius: 14px; border: 1px solid var(--border); padding: 20px; display: flex; align-items: center; gap: 14px; box-shadow: var(--shadow); transition: 0.2s; position: relative; overflow: hidden; }
+        .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 14px 14px 0 0; }
+        .stat-card.total::before { background: var(--primary); }
+        .stat-card.pendente::before { background: var(--warning); }
+        .stat-card.aprovada::before { background: var(--success); }
+        .stat-card.recusada::before { background: var(--danger); }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+        .stat-icon-box { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
+        .stat-card.total   .stat-icon-box { background: var(--primary-light); }
+        .stat-card.pendente .stat-icon-box { background: var(--warning-bg); }
+        .stat-card.aprovada .stat-icon-box { background: var(--success-bg); }
+        .stat-card.recusada .stat-icon-box { background: var(--danger-bg); }
+        .stat-val { font-size: 1.7rem; font-weight: 800; line-height: 1; }
+        .stat-lbl { font-size: 0.72rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+
+        /* ── TOOLBAR ── */
+        .toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+        .search-wrap { flex: 1; min-width: 200px; position: relative; }
+        .search-wrap input { width: 100%; padding: 10px 16px 10px 38px; border: 1.5px solid var(--border); border-radius: 10px; font-family: inherit; font-size: 0.88rem; outline: none; background: white; transition: 0.2s; }
+        .search-wrap input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+        .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 0.9rem; pointer-events: none; }
+        .filtros { display: flex; gap: 6px; flex-wrap: wrap; }
+        .filtro-btn { background: white; border: 1.5px solid var(--border); color: var(--text-muted); padding: 8px 14px; border-radius: 20px; cursor: pointer; font-size: 0.8rem; font-weight: 600; transition: 0.2s; font-family: inherit; white-space: nowrap; }
+        .filtro-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .filtro-btn.ativo { background: var(--primary); border-color: var(--primary); color: white; }
+
+        /* ── TABELA ── */
+        .table-wrap { background: white; border-radius: 16px; border: 1px solid var(--border); box-shadow: var(--shadow); overflow: hidden; }
+        .table-head-bar { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .table-head-bar h3 { font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .results-count { font-size: 0.78rem; color: var(--text-muted); font-weight: 600; background: var(--bg); padding: 4px 10px; border-radius: 20px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        thead tr { background: #f8fafc; border-bottom: 1px solid var(--border); }
+        th { padding: 12px 16px; text-align: left; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.06em; white-space: nowrap; }
+        td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr { transition: 0.15s; }
+        tbody tr:hover td { background: #fafbff; }
+
+        .badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; white-space: nowrap; }
+        .badge-pendente { background: var(--warning-bg); color: #92400e; }
+        .badge-aprovada { background: var(--success-bg); color: #166534; }
+        .badge-recusada { background: var(--danger-bg); color: #991b1b; }
+
+        .tipo-label { font-weight: 600; color: var(--text-main); }
+        .desc-cell { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); font-size: 0.82rem; }
+        .date-cell { font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; }
+        .func-cell { font-weight: 700; font-size: 0.84rem; }
+        .func-sub { font-size: 0.72rem; color: var(--text-muted); font-weight: 400; }
+
+        .resposta-box { font-size: 0.75rem; padding: 6px 10px; border-radius: 6px; max-width: 220px; border-left: 3px solid; }
+        .resposta-aprovada { background: #f0fdf4; color: #166534; border-color: var(--success); }
+        .resposta-recusada { background: #fff1f2; color: #991b1b; border-color: var(--danger); }
+        .text-muted-sm { color: var(--text-muted); font-size: 0.78rem; }
+
+        .btn-responder { background: var(--primary-light); color: var(--primary); border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.78rem; font-weight: 700; transition: 0.2s; font-family: inherit; }
+        .btn-responder:hover { background: var(--primary); color: white; }
+        .btn-excluir { background: var(--danger-bg); color: var(--danger); border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: 600; transition: 0.2s; font-family: inherit; margin-left: 4px; }
+        .btn-excluir:hover { background: var(--danger); color: white; }
+
+        .empty-row td { text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 0.88rem; }
+        .empty-icon { font-size: 2.5rem; display: block; margin-bottom: 10px; }
+
+        /* ── MODAIS ── */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-overlay.open { display: flex; }
+        .modal-card { background: white; width: 90%; max-width: 520px; border-radius: 18px; box-shadow: 0 25px 50px rgba(0,0,0,0.2); padding: 28px; max-height: 90vh; overflow-y: auto; }
+        .modal-card h3 { margin-bottom: 20px; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; }
+        .modal-card input, .modal-card textarea, .modal-card select { width: 100%; padding: 10px 14px; margin-bottom: 12px; border: 1.5px solid var(--border); border-radius: 10px; font-family: inherit; font-size: 0.9rem; outline: none; transition: 0.2s; }
+        .modal-card input:focus, .modal-card textarea:focus, .modal-card select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+        .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+        .btn-cancel { background: var(--bg); border: 1px solid var(--border); color: var(--text-muted); padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; font-family: inherit; }
+        .field-label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.05em; }
+
+        /* Chips de tipo */
+        .tipo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+        .tipo-chip { padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 10px; cursor: pointer; font-size: 0.8rem; font-weight: 600; text-align: center; transition: 0.15s; background: white; font-family: inherit; color: var(--text-main); }
+        .tipo-chip:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+        .tipo-chip.selecionado { border-color: var(--primary); background: var(--primary); color: white; }
+
+        /* Modal responder */
+        .resp-info { background: var(--bg); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; border-left: 4px solid var(--primary); }
+        .resp-info b { font-size: 0.88rem; display: block; margin-bottom: 2px; }
+        .resp-info small { font-size: 0.78rem; color: var(--text-muted); }
+        .resp-info p { font-size: 0.83rem; margin-top: 8px; color: var(--text-main); line-height: 1.5; }
+        .btn-aprovar { background: var(--success-bg); color: #166534; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; font-family: inherit; transition: 0.2s; }
+        .btn-aprovar:hover { background: var(--success); color: white; }
+        .btn-recusar { background: var(--danger-bg); color: var(--danger); border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; font-family: inherit; transition: 0.2s; }
+        .btn-recusar:hover { background: var(--danger); color: white; }
+
+        /* ── TIMELINE (inovação) ── */
+        .timeline-section { margin-top: 36px; }
+        .timeline-section h3 { font-size: 1rem; font-weight: 700; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+        .timeline { position: relative; padding-left: 28px; }
+        .timeline::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: var(--border); border-radius: 2px; }
+        .tl-item { position: relative; margin-bottom: 18px; }
+        .tl-dot { position: absolute; left: -24px; top: 4px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 0 2px var(--border); }
+        .tl-dot.pendente { background: var(--warning); box-shadow: 0 0 0 2px var(--warning-bg); }
+        .tl-dot.aprovada { background: var(--success); box-shadow: 0 0 0 2px var(--success-bg); }
+        .tl-dot.recusada { background: var(--danger); box-shadow: 0 0 0 2px var(--danger-bg); }
+        .tl-card { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px; box-shadow: var(--shadow); }
+        .tl-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 4px; }
+        .tl-tipo { font-size: 0.85rem; font-weight: 700; }
+        .tl-meta { font-size: 0.72rem; color: var(--text-muted); }
+        .tl-func { font-size: 0.78rem; color: var(--text-muted); }
+        .tl-resp { font-size: 0.78rem; margin-top: 6px; padding: 5px 10px; border-radius: 6px; }
+        .tl-resp.aprovada { background: var(--success-bg); color: #166534; }
+        .tl-resp.recusada { background: var(--danger-bg); color: #991b1b; }
+
+        /* ── MISC ── */
+        .clock-footer { position: fixed; bottom: 20px; right: 20px; background: white; padding: 8px 16px; border-radius: 30px; border: 1px solid var(--border); box-shadow: var(--shadow); font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px; z-index: 99; }
+        .clock-dot { width: 6px; height: 6px; background: var(--primary); border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+        .toast { position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 10px 20px; border-radius: 30px; font-size: 0.85rem; font-weight: 600; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
+        .toast.show { opacity: 1; }
+
+        @media (max-width: 800px) {
+            .stats-row { grid-template-columns: 1fr 1fr; }
+            header.navbar { padding: 12px 20px; }
+            .page { padding: 24px 20px; }
+            .nav-left h1, .nav-left p { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+        <div class="sidebar-logo">
+            <div class="logo-icon-sm">🌳</div>
+            <span>Menu</span>
+        </div>
+        <button class="btn-close-sidebar" onclick="closeSidebar()">✕</button>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="sidebar-section-label">Principal</div>
+        <a class="sidebar-item" href="/dashboard"><span class="si-icon">🏠</span> Dashboard</a>
+        <a class="sidebar-item" href="/horas"><span class="si-icon">📅</span> Banco de Horas</a>
+        <a class="sidebar-item" href="/sgrh"><span class="si-icon">📄</span> SGRH</a>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-section-label">Ferramentas</div>
+        <a class="sidebar-item" href="/ocorrencias"><span class="si-icon">📋</span> Solicitações</a>
+        <a class="sidebar-item" href="/equipe"><span class="si-icon">👥</span> Nossa Equipe</a>
+        <a class="sidebar-item" href="/ramais"><span class="si-icon">📞</span> Ramais</a>
+        <a class="sidebar-item" href="/ci"><span class="si-icon">📄</span> CI</a>
+        <div class="sidebar-divider"></div>
+                <div class="sidebar-section-label">Agenda</div>
+        <a class="sidebar-item" href="/calendario_letivo"><span class="si-icon">🗓️</span> Calendário Letivo</a>
+        <a class="sidebar-item ativo" href="/hub"><span class="si-icon">🔗</span> HUB</a>
+        <a class="sidebar-item" href="/evento"><span class="si-icon">🎯</span> Eventos</a>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-section-label">Conteúdo</div>
+        <a class="sidebar-item" href="/repositorio"><span class="si-icon">📁</span> Repositório</a>
+        <a class="sidebar-item" href="/atas"><span class="si-icon">📝</span> Atas de Reunião</a>
+        <div class="sidebar-section-label">Relatórios</div>
+        <a class="sidebar-item" href="/relatorios"><span class="si-icon">🖨️</span> Relatórios</a>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="avatar-sm">{{ nome[0] }}</div>
+        <div class="sidebar-footer-info">
+            <b>{{ nome }}</b>
+            <small>{{ cargo | capitalize }}</small>
+        </div>
+        <a href="/logout" class="btn-logout-sidebar" title="Sair">⏻</a>
+    </div>
+</aside>
+
+<!-- NAVBAR -->
+<header class="navbar">
+    <div class="nav-left">
+        <button class="btn-menu" onclick="openSidebar()">☰</button>
+        <div class="logo-icon">🌳</div>
+        <div>
+            <h1>{{ '📥 Solicitações da Equipe' if cargo == 'chefe' else '📋 Minhas Solicitações' }}</h1>
+            <p>{{ 'Gerencie e responda as solicitações' if cargo == 'chefe' else 'Acompanhe e crie solicitações' }}</p>
+        </div>
+    </div>
+    <div class="nav-right">
+        <button class="btn-new" onclick="openModal('modal-solic')">+ Nova Solicitação</button>
+        <div style="display:flex;flex-direction:column;align-items:flex-end">
+            <span style="font-size:0.9rem;font-weight:600">{{ nome }}</span>
+            <span style="font-size:0.75rem;color:var(--success)">Online</span>
+        </div>
+        <div class="avatar">{{ nome[0] }}</div>
+        <a href="/logout" style="font-size:0.8rem;color:var(--text-muted);text-decoration:none">Sair</a>
+    </div>
+</header>
+
+<div class="page">
+
+    <!-- STATS -->
+    <div class="stats-row">
+        <div class="stat-card total">
+            <div class="stat-icon-box">📋</div>
+            <div><div class="stat-val" id="stat-total">—</div><div class="stat-lbl">Total</div></div>
+        </div>
+        <div class="stat-card pendente">
+            <div class="stat-icon-box">⏳</div>
+            <div><div class="stat-val" id="stat-pendente">—</div><div class="stat-lbl">Pendentes</div></div>
+        </div>
+        <div class="stat-card aprovada">
+            <div class="stat-icon-box">✅</div>
+            <div><div class="stat-val" id="stat-aprovada">—</div><div class="stat-lbl">Aprovadas</div></div>
+        </div>
+        <div class="stat-card recusada">
+            <div class="stat-icon-box">❌</div>
+            <div><div class="stat-val" id="stat-recusada">—</div><div class="stat-lbl">Recusadas</div></div>
+        </div>
+    </div>
+
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+        <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="search-input" placeholder="Buscar por tipo, funcionário ou observação..." oninput="filtrar()">
+        </div>
+        <div class="filtros">
+            <button class="filtro-btn ativo" onclick="setFiltro('todos', this)">Todas</button>
+            <button class="filtro-btn" onclick="setFiltro('pendente', this)">⏳ Pendentes</button>
+            <button class="filtro-btn" onclick="setFiltro('aprovada', this)">✅ Aprovadas</button>
+            <button class="filtro-btn" onclick="setFiltro('recusada', this)">❌ Recusadas</button>
+        </div>
+    </div>
+
+    <!-- TABELA -->
+    <div class="table-wrap">
+        <div class="table-head-bar">
+            <h3>📄 Listagem</h3>
+            <span class="results-count" id="results-count">— registros</span>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    {% if cargo == 'chefe' %}<th>Funcionário</th>{% endif %}
+                    <th>Tipo</th>
+                    <th>Data ref.</th>
+                    <th>Observação</th>
+                    <th>Enviado em</th>
+                    <th>Status</th>
+                    <th>Resposta / Ação</th>
+                </tr>
+            </thead>
+            <tbody id="solic-tbody">
+                <tr class="empty-row"><td colspan="7"><span class="empty-icon">⏳</span>Carregando...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- TIMELINE -->
+    <div class="timeline-section">
+        <h3>🕒 Histórico Recente</h3>
+        <div class="timeline" id="timeline-lista">
+            <p style="color:var(--text-muted);font-size:0.85rem">Carregando histórico...</p>
+        </div>
+    </div>
+</div>
+
+<!-- CLOCK -->
+<div class="clock-footer"><div class="clock-dot"></div><span id="real-time">00:00:00</span></div>
+<div class="toast" id="toast"></div>
+
+<!-- MODAL: Nova Solicitação -->
+<div class="modal-overlay" id="modal-solic">
+    <div class="modal-card">
+        <h3>📋 Nova Solicitação</h3>
+        <span class="field-label">Tipo de solicitação</span>
+        <div class="tipo-grid">
+            <button class="tipo-chip" onclick="selecionarTipo(this,'Folga')">🏖️ Folga</button>
+            <button class="tipo-chip" onclick="selecionarTipo(this,'Folga Compensatória')">🔄 Folga Compensatória</button>
+            <button class="tipo-chip" onclick="selecionarTipo(this,'Licença Médica / Atestado')">🏥 Licença Médica</button>
+            <button class="tipo-chip" onclick="selecionarTipo(this,'Abono de Falta')">📝 Abono de Falta</button>
+            <button class="tipo-chip" onclick="selecionarTipo(this,'Troca de Turno / Horário')">🔁 Troca de Turno</button>
+            <button class="tipo-chip" onclick="selecionarTipo(this,'Saída Antecipada')">🚪 Saída Antecipada</button>
+            <button class="tipo-chip" onclick="selecionarTipo(this,'Compensação de Horas')">⏱️ Compensação de Horas</button>
+            <button class="tipo-chip" onclick="selecionarTipo(this,'Férias')">🌴 Férias</button>
+            <button class="tipo-chip" onclick="selecionarTipo(this,'Licença Maternidade / Paternidade')">👶 Licença Mat./Pat.</button>
+            <button class="tipo-chip" onclick="selecionarTipo(this,'Capacitação / Curso Externo')">📚 Capacitação</button>
+            <button class="tipo-chip" onclick="selecionarTipo(this,'Remoção de Setor')">🏢 Remoção de Setor</button>
+            <button class="tipo-chip" onclick="selecionarTipo(this,'Outro')">💬 Outro</button>
+        </div>
+        <input type="hidden" id="solic-tipo-input">
+        <span class="field-label">Data referente</span>
+        <input type="date" id="solic-data-input">
+        <span class="field-label">Observação (opcional)</span>
+        <textarea id="solic-desc-input" placeholder="Detalhe sua solicitação se necessário..." rows="3"></textarea>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeModal('modal-solic')">Cancelar</button>
+            <button class="btn-new" onclick="saveSolicitacao()">📤 Enviar</button>
+        </div>
+    </div>
+</div>
+
+{% if cargo == 'chefe' %}
+<!-- MODAL: Responder -->
+<div class="modal-overlay" id="modal-responder">
+    <div class="modal-card">
+        <h3>💬 Responder Solicitação</h3>
+        <div class="resp-info" id="resp-info-box"></div>
+        <input type="hidden" id="resp-solic-id">
+        <span class="field-label">Mensagem de resposta (opcional)</span>
+        <textarea id="resp-texto" placeholder="Ex: Aprovado. Favor registrar no sistema." rows="3"></textarea>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeModal('modal-responder')">Cancelar</button>
+            <button class="btn-recusar" onclick="responderSolic('recusada')">❌ Recusar</button>
+            <button class="btn-aprovar" onclick="responderSolic('aprovada')">✅ Aprovar</button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+    const CARGO       = "{{ cargo }}";
+    const NOME_ATUAL  = "{{ nome }}";
+
+    let todasSolic  = [];
+    let filtroAtual = 'todos';
+
+    // ── utils ──
+    function openSidebar()  { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('open'); }
+    function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.remove('open'); }
+    function openModal(id)  { document.getElementById(id).classList.add('open'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+    window.onclick = e => { if (e.target.classList.contains('modal-overlay')) e.target.classList.remove('open'); };
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeSidebar(); document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open')); } });
+    setInterval(() => { document.getElementById('real-time').textContent = new Date().toLocaleTimeString('pt-BR'); }, 1000);
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg; t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2800);
+    }
+    function escHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+    function fmtData(iso) {
+        if (!iso) return '—';
+        const p = iso.split('-');
+        return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : iso;
+    }
+    function fmtDt(ts) {
+        if (!ts) return '—';
+        return new Date(ts).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' });
+    }
+
+    // ── tipo chip ──
+    function selecionarTipo(el, tipo) {
+        document.querySelectorAll('.tipo-chip').forEach(c => c.classList.remove('selecionado'));
+        el.classList.add('selecionado');
+        document.getElementById('solic-tipo-input').value = tipo;
+    }
+
+    // ── carregar ──
+    async function carregar() {
+        try {
+            todasSolic = await fetch('/solicitacoes').then(r => r.json());
+            atualizarStats();
+            renderTabela();
+            renderTimeline();
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    function atualizarStats() {
+        document.getElementById('stat-total').textContent    = todasSolic.length;
+        document.getElementById('stat-pendente').textContent = todasSolic.filter(s => s.status === 'pendente').length;
+        document.getElementById('stat-aprovada').textContent = todasSolic.filter(s => s.status === 'aprovada').length;
+        document.getElementById('stat-recusada').textContent = todasSolic.filter(s => s.status === 'recusada').length;
+    }
+
+    function getListaFiltrada() {
+        const q = (document.getElementById('search-input').value || '').toLowerCase().trim();
+        return todasSolic.filter(s => {
+            const matchFiltro = filtroAtual === 'todos' || s.status === filtroAtual;
+            const matchQ = !q ||
+                (s.tipo || '').toLowerCase().includes(q) ||
+                (s.solicitante || '').toLowerCase().includes(q) ||
+                (s.descricao || '').toLowerCase().includes(q);
+            return matchFiltro && matchQ;
+        });
+    }
+
+    function setFiltro(f, btn) {
+        filtroAtual = f;
+        document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('ativo'));
+        btn.classList.add('ativo');
+        renderTabela();
+    }
+
+    function filtrar() { renderTabela(); }
+
+    function renderTabela() {
+        const tbody = document.getElementById('solic-tbody');
+        const lista = getListaFiltrada();
+        document.getElementById('results-count').textContent = `${lista.length} registro${lista.length !== 1 ? 's' : ''}`;
+
+        if (!lista.length) {
+            const cols = CARGO === 'chefe' ? 7 : 6;
+            tbody.innerHTML = `<tr class="empty-row"><td colspan="${cols}"><span class="empty-icon">📭</span>Nenhuma solicitação encontrada.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = lista.map(s => {
+            const badgeCls  = s.status === 'aprovada' ? 'badge-aprovada' : s.status === 'recusada' ? 'badge-recusada' : 'badge-pendente';
+            const badgeEmoji = s.status === 'aprovada' ? '✅' : s.status === 'recusada' ? '❌' : '⏳';
+            const statusLabel = s.status.charAt(0).toUpperCase() + s.status.slice(1);
+
+            let acaoCol = '';
+            if (CARGO === 'chefe') {
+                if (s.status === 'pendente') {
+                    acaoCol = `<button class="btn-responder" onclick="abrirResponder(${s.id},'${escHtml(s.solicitante)}','${escHtml(s.tipo)}',\`${escHtml(s.descricao)}\`,'${fmtData(s.data_ref)}')">Responder</button>`;
+                } else {
+                    acaoCol = s.resposta
+                        ? `<div class="resposta-box resposta-${s.status}">${escHtml(s.resposta)}</div>`
+                        : '<span class="text-muted-sm">—</span>';
+                }
+                acaoCol += ` <button class="btn-excluir" onclick="deletarSolic(${s.id})">🗑</button>`;
+            } else {
+                acaoCol = s.resposta
+                    ? `<div class="resposta-box resposta-${s.status}">${escHtml(s.resposta)}</div>`
+                    : s.status === 'pendente'
+                        ? '<span class="text-muted-sm">Aguardando...</span>'
+                        : '<span class="text-muted-sm">—</span>';
+            }
+
+            const funcCol = CARGO === 'chefe'
+                ? `<td><div class="func-cell">${escHtml(s.solicitante)}</div></td>`
+                : '';
+
+            return `<tr>
+                ${funcCol}
+                <td><span class="tipo-label">${escHtml(s.tipo)}</span></td>
+                <td><span class="date-cell">${fmtData(s.data_ref)}</span></td>
+                <td><div class="desc-cell" title="${escHtml(s.descricao)}">${escHtml(s.descricao) || '—'}</div></td>
+                <td><span class="date-cell">${fmtDt(s.data_pedido)}</span></td>
+                <td><span class="badge ${badgeCls}">${badgeEmoji} ${statusLabel}</span></td>
+                <td>${acaoCol}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    // ── timeline ──
+    function renderTimeline() {
+        const el = document.getElementById('timeline-lista');
+        // Mostra as 8 mais recentes (já respondidas ou recentes)
+        const recentes = [...todasSolic]
+            .sort((a, b) => new Date(b.data_pedido) - new Date(a.data_pedido))
+            .slice(0, 8);
+
+        if (!recentes.length) {
+            el.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem">Nenhuma solicitação ainda.</p>';
+            return;
+        }
+
+        el.innerHTML = recentes.map(s => {
+            const funcInfo = CARGO === 'chefe' ? `<span class="tl-func">👤 ${escHtml(s.solicitante)}</span>` : '';
+            const respHtml = s.resposta
+                ? `<div class="tl-resp ${s.status}">${escHtml(s.resposta)}</div>`
+                : '';
+            return `<div class="tl-item">
+                <div class="tl-dot ${s.status}"></div>
+                <div class="tl-card">
+                    <div class="tl-card-head">
+                        <div>
+                            <div class="tl-tipo">${escHtml(s.tipo)}</div>
+                            ${funcInfo}
+                        </div>
+                        <span class="tl-meta">${fmtDt(s.data_pedido)}</span>
+                    </div>
+                    ${s.descricao ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px">${escHtml(s.descricao)}</div>` : ''}
+                    ${respHtml}
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    // ── criar solicitação ──
+    async function saveSolicitacao() {
+        const tipo     = document.getElementById('solic-tipo-input').value;
+        const data_ref = document.getElementById('solic-data-input').value;
+        const descricao = document.getElementById('solic-desc-input').value.trim();
+
+        if (!tipo) { showToast('⚠️ Selecione o tipo de solicitação'); return; }
+
+        const btn = document.querySelector('#modal-solic .btn-new');
+        btn.textContent = 'Enviando...'; btn.disabled = true;
+
+        try {
+            await fetch('/solicitacoes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tipo, data_ref, descricao })
+            });
+            closeModal('modal-solic');
+            document.getElementById('solic-tipo-input').value = '';
+            document.getElementById('solic-data-input').value = '';
+            document.getElementById('solic-desc-input').value = '';
+            document.querySelectorAll('.tipo-chip').forEach(c => c.classList.remove('selecionado'));
+            showToast('📋 Solicitação enviada!');
+            await carregar();
+        } finally {
+            btn.textContent = '📤 Enviar'; btn.disabled = false;
+        }
+    }
+
+    // ── responder (chefe) ──
+    function abrirResponder(id, solicitante, tipo, descricao, dataRef) {
+        document.getElementById('resp-solic-id').value = id;
+        document.getElementById('resp-texto').value = '';
+        document.getElementById('resp-info-box').innerHTML =
+            `<b>👤 ${escHtml(solicitante)}</b>
+             <small>${escHtml(tipo)}${dataRef !== '—' ? ' · 📅 ' + dataRef : ''}</small>
+             ${descricao ? `<p>${escHtml(descricao)}</p>` : ''}`;
+        openModal('modal-responder');
+    }
+
+    async function responderSolic(status) {
+        const id      = document.getElementById('resp-solic-id').value;
+        const resposta = document.getElementById('resp-texto').value.trim();
+
+        await fetch(`/solicitacoes/${id}/responder`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status, resposta })
+        });
+        closeModal('modal-responder');
+        showToast(status === 'aprovada' ? '✅ Aprovada!' : '❌ Recusada.');
+        await carregar();
+    }
+
+    // ── excluir (chefe) ──
+    async function deletarSolic(id) {
+        if (!confirm('Excluir esta solicitação permanentemente?')) return;
+        const res = await fetch(`/solicitacoes/${id}`, { method: 'DELETE' });
+        if (res.ok) { showToast('🗑 Excluída!'); await carregar(); }
+        else { const d = await res.json(); showToast(d.erro || 'Erro ao excluir.'); }
+    }
+
+    // ── init ──
+    carregar();
+    setInterval(carregar, 15000); // atualiza a cada 15s
+</script>
+</body>
+</html>

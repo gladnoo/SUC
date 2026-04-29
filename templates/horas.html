@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Banco de Horas</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            --primary: #2d3436;
+            --accent: #0984e3;
+            --success: #00b894;
+            --danger: #d63031;
+            --glass: rgba(255, 255, 255, 0.95);
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            min-height: 100vh;
+            margin: 0;
+            padding: 40px 20px;
+            color: var(--primary);
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: auto;
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .header-title h2 {
+            margin: 0;
+            font-size: 28px;
+            background: linear-gradient(to right, #2d3436, #0984e3);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .welcome-msg {
+            color: #636e72;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .user-pill {
+            background: #dfe6e9;
+            padding: 8px 18px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* ========================
+            👑 SELETOR DE CHEFE
+        ======================== */
+        .seletor-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #f0f4ff;
+            border: 1.5px solid #c7d7fd;
+            border-radius: 12px;
+            padding: 8px 14px;
+        }
+
+        .seletor-wrapper label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #4a6fa5;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .seletor-wrapper select {
+            border: none;
+            background: transparent;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            color: #2d3436;
+            cursor: pointer;
+            outline: none;
+            padding-right: 4px;
+        }
+
+        /* badge "CHEFE" na pill */
+        .cargo-badge {
+            background: linear-gradient(135deg, #6c5ce7, #0984e3);
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            padding: 3px 8px;
+            border-radius: 20px;
+            text-transform: uppercase;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th {
+            background-color: #f8fafc;
+            color: #b2bec3;
+            text-transform: uppercase;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            padding: 20px;
+            text-align: left;
+        }
+
+        td {
+            padding: 18px 20px;
+            border-bottom: 1px solid #f1f2f6;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+
+        tr:hover td {
+            background-color: #f9fbff;
+            transform: scale(1.002);
+        }
+
+        .badge {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 13px;
+        }
+
+        .credito { color: var(--success); background: #e6fffb; border: 1px solid #b7ebde; }
+        .debito { color: var(--danger); background: #fff1f0; border: 1px solid #ffa39e; }
+        
+        .saldo-cell { font-weight: 700; color: var(--primary); }
+        .data-cell { font-weight: 600; color: #2d3436; }
+        .icon-box { color: var(--accent); margin-right: 8px; }
+
+        .empty-state { text-align: center; padding: 60px 20px; }
+        .empty-state i { font-size: 60px; color: #dfe6e9; margin-bottom: 20px; }
+
+        /* estado vazio específico pra chefe que ainda não selecionou */
+        .empty-select {
+            text-align: center;
+            padding: 60px 20px;
+            color: #94a3b8;
+        }
+        .empty-select i { font-size: 50px; color: #c7d7fd; margin-bottom: 16px; display: block; }
+        .empty-select p { font-size: 15px; font-weight: 600; margin: 0; }
+        .empty-select span { font-size: 13px; color: #b2bec3; }
+
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 30px;
+            text-decoration: none;
+            color: var(--accent);
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .btn-back:hover { transform: translateX(-5px); }
+
+        .btn-novo {
+            padding: 11px 22px;
+            background: linear-gradient(135deg, #0984e3, #6c5ce7);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 14px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(9,132,227,0.35);
+            transition: all 0.2s;
+        }
+
+        .btn-novo:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(9,132,227,0.45);
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .modal-box {
+            background: white;
+            width: 100%;
+            max-width: 460px;
+            border-radius: 24px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.2);
+            overflow: hidden;
+            animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.9) translateY(20px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #0984e3, #6c5ce7);
+            padding: 24px 28px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-close {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .modal-close:hover { background: rgba(255,255,255,0.35); }
+
+        .modal-body {
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .field-group label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        .field-group input, .field-group select, .field-group textarea {
+            padding: 11px 14px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 10px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 14px;
+            color: #2d3436;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+            background: #f8fafc;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .field-group input:focus, .field-group select:focus {
+            border-color: #0984e3;
+            box-shadow: 0 0 0 3px rgba(9,132,227,0.12);
+            background: white;
+        }
+
+        .row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .periodo-preview {
+            background: #f0f9ff;
+            border: 1.5px solid #bae6fd;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #0369a1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 42px;
+        }
+
+        .credito-preview {
+            background: #f0fdf4;
+            border: 1.5px solid #bbf7d0;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-weight: 700;
+            color: #15803d;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 42px;
+        }
+
+        .modal-footer {
+            padding: 0 28px 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn-salvar {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #00b894, #00cec9);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 15px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            box-shadow: 0 4px 15px rgba(0,184,148,0.35);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-salvar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,184,148,0.45);
+        }
+
+        .btn-cancelar {
+            width: 100%;
+            padding: 11px;
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+
+        .btn-cancelar:hover { color: #64748b; }
+
+        .tipo-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .tipo-btn {
+            padding: 10px;
+            border-radius: 10px;
+            border: 2px solid #e2e8f0;
+            background: #f8fafc;
+            cursor: pointer;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .tipo-btn.active-credito {
+            border-color: #00b894;
+            background: #f0fdf4;
+            color: #15803d;
+        }
+
+        .tipo-btn.active-debito {
+            border-color: #d63031;
+            background: #fff1f0;
+            color: #991b1b;
+        }
+
+        @media (max-width: 768px) {
+            .header { flex-direction: column; text-align: center; }
+            .header-right { justify-content: center; }
+            .container { padding: 20px; }
+            .modal-box { margin: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="header-title">
+            <h2><i class="fa-solid fa-clock-rotate-left icon-box"></i>Banco de Horas</h2>
+            <div class="welcome-msg">Relatório de frequência e compensação de jornada</div>
+        </div>
+
+        <div class="header-right">
+
+            {# ── SELETOR: só aparece pra chefe ── #}
+            {% if cargo == "chefe" %}
+            <form method="GET" action="/horas" id="formSeletor">
+                <div class="seletor-wrapper">
+                    <label for="seletorFunc">
+                        <i class="fa-solid fa-users"></i> Visualizando:
+                    </label>
+                    <select name="funcionario" id="seletorFunc" onchange="document.getElementById('formSeletor').submit()">
+                        <option value="">— Selecione —</option>
+                        {% for f in funcionarios %}
+                            <option value="{{ f.NOME }}"
+                                {% if f.NOME == nome_selecionado %}selected{% endif %}>
+                                {{ f.NOME }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </form>
+            {% endif %}
+
+            {# ── PILL com nome + badge de cargo ── #}
+            <div class="user-pill">
+                <i class="fa-solid fa-circle-user"></i>
+                {{ session['nome'] }}
+                {% if cargo == "chefe" %}
+                    <span class="cargo-badge">Chefe</span>
+                {% endif %}
+            </div>
+
+            {# ── Botão novo lançamento: some se chefe estiver vendo outro funcionário ── #}
+            {% if cargo != "chefe" or nome_selecionado == session['nome'] %}
+            <button class="btn-novo" onclick="abrirModal()">
+                <i class="fa-solid fa-plus"></i> Novo Lançamento
+            </button>
+            {% endif %}
+
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th><i class="fa-regular fa-calendar-check"></i> Data</th>
+                    <th><i class="fa-solid fa-pen-nib"></i> Justificativa</th>
+                    <th><i class="fa-regular fa-clock"></i> Período</th>
+                    <th><i class="fa-solid fa-plus-circle"></i> Crédito</th>
+                    <th><i class="fa-solid fa-minus-circle"></i> Débito</th>
+                    <th><i class="fa-solid fa-chart-line"></i> Saldo</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if cargo == "chefe" and not nome_selecionado %}
+                    {# Chefe ainda não selecionou ninguém #}
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-select">
+                                <i class="fa-solid fa-arrow-pointer"></i>
+                                <p>Selecione um funcionário acima</p>
+                                <span>para visualizar o banco de horas</span>
+                            </div>
+                        </td>
+                    </tr>
+                {% elif dados %}
+                    {% for linha in dados %}
+                    <tr>
+                        <td class="data-cell">{{ linha['DATA'] }}</td>
+                        <td style="color: #636e72;">{{ linha['JUSTIFICATIVA'] }}</td>
+                        <td>{{ linha['PERIODO'] }}</td>
+                        <td>
+                            {% if linha['CREDITO'] and linha['CREDITO'] not in ['0', 0, '00:00'] %}
+                                <span class="badge credito">+ {{ linha['CREDITO'] }}</span>
+                            {% else %}
+                                <span style="color: #dfe6e9;">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if linha['DEBITO'] and linha['DEBITO'] not in ['0', 0, '00:00'] %}
+                                <span class="badge debito">- {{ linha['DEBITO'] }}</span>
+                            {% else %}
+                                <span style="color: #dfe6e9;">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="saldo-cell">{{ linha['SALDO'] }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <i class="fa-solid fa-folder-open"></i>
+                                <p>Nenhum registro encontrado para este período.</p>
+                            </div>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    <a href="/dashboard" class="btn-back">
+        <i class="fa-solid fa-arrow-left"></i> Voltar ao Dashboard
+    </a>
+</div>
+
+{# ── Modal de lançamento (só renderiza se tiver permissão) ── #}
+{% if cargo != "chefe" or nome_selecionado == session['nome'] %}
+<div class="modal-overlay" id="modalForm">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-pen-to-square"></i> Lançar Hora</h3>
+            <button class="modal-close" onclick="fecharModal()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <form action="/lancar-hora" method="POST">
+            <div class="modal-body">
+                <div class="field-group">
+                    <label><i class="fa-regular fa-calendar"></i> Data</label>
+                    <input type="date" name="data_raw" id="inputData" required onchange="atualizarPreview()">
+                    <input type="hidden" name="data" id="dataFormatada">
+                </div>
+
+                <div class="field-group">
+                    <label><i class="fa-solid fa-tag"></i> Justificativa</label>
+                    <textarea name="justificativa" placeholder="Digite a justificativa..." required></textarea>
+                </div>
+
+                <div class="row-2">
+                    <div class="field-group">
+                        <label>Início</label>
+                        <input type="time" id="horaInicio" onchange="atualizarPeriodo()">
+                    </div>
+                    <div class="field-group">
+                        <label>Fim</label>
+                        <input type="time" id="horaFim" onchange="atualizarPeriodo()">
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <label><i class="fa-solid fa-arrows-left-right"></i> Tipo</label>
+                    <div class="tipo-selector">
+                        <button type="button" class="tipo-btn active-credito" id="btnCredito" onclick="selecionarTipo('credito')">
+                            ✅ Crédito 
+                        </button>
+                        <button type="button" class="tipo-btn" id="btnDebito" onclick="selecionarTipo('debito')">
+                            ❌ Débito
+                        </button>
+                    </div>
+                    <input type="hidden" name="tipo_lancamento" id="tipoLancamento" value="credito">
+                </div>
+
+                <div class="field-group">
+                    <label><i class="fa-regular fa-clock"></i> Duração</label>
+                    <input type="time" id="duracaoInput" required onchange="calcularHoras()">
+                </div>
+
+                <div class="row-2">
+                    <div class="field-group">
+                        <label>Período Final</label>
+                        <div class="periodo-preview" id="periodoPreview">
+                            <i class="fa-regular fa-clock"></i>
+                            <span id="periodoTexto">—</span>
+                        </div>
+                        <input type="hidden" name="periodo" id="periodoHidden">
+                    </div>
+                    <div class="field-group">
+                        <label>Duração Total</label>
+                        <div class="credito-preview" id="duracaoPreview">
+                            <i class="fa-solid fa-hourglass-half"></i>
+                            <span id="duracaoTexto">—</span>
+                        </div>
+                    </div>
+                </div>
+
+                <input type="hidden" name="credito" id="campoCredito" value="0">
+                <input type="hidden" name="debito" id="campoDebito" value="0">
+            </div>
+
+            <div class="modal-footer">
+                <button type="submit" class="btn-salvar" onclick="prepararEnvio()">
+                    <i class="fa-solid fa-floppy-disk"></i> Salvar na Planilha
+                </button>
+                <button type="button" class="btn-cancelar" onclick="fecharModal()">
+                    Cancelar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    let tipoAtual = 'credito';
+
+    function abrirModal() {
+        document.getElementById('modalForm').classList.add('active');
+    }
+
+    function fecharModal() {
+        document.getElementById('modalForm').classList.remove('active');
+    }
+
+    document.getElementById('modalForm').addEventListener('click', function(e) {
+        if (e.target === this) fecharModal();
+    });
+
+    function selecionarTipo(tipo) {
+        tipoAtual = tipo;
+        document.getElementById('tipoLancamento').value = tipo;
+        const btnC = document.getElementById('btnCredito');
+        const btnD = document.getElementById('btnDebito');
+        btnC.className = 'tipo-btn' + (tipo === 'credito' ? ' active-credito' : '');
+        btnD.className = 'tipo-btn' + (tipo === 'debito' ? ' active-debito' : '');
+        calcularHoras();
+    }
+
+    function calcularHoras() {
+        const duracao = document.getElementById('duracaoInput').value;
+        if (!duracao) return;
+        document.getElementById('duracaoTexto').textContent = duracao;
+        if (tipoAtual === 'credito') {
+            document.getElementById('campoCredito').value = duracao;
+            document.getElementById('campoDebito').value = '0';
+        } else {
+            document.getElementById('campoDebito').value = duracao;
+            document.getElementById('campoCredito').value = '0';
+        }
+    }
+
+    function atualizarPreview() {
+        const raw = document.getElementById('inputData').value;
+        if (!raw) return;
+        const [ano, mes, dia] = raw.split('-');
+        document.getElementById('dataFormatada').value = `${dia}/${mes}/${ano}`;
+    }
+
+    function prepararEnvio() {
+        atualizarPreview();
+    }
+
+    function atualizarPeriodo() {
+        const inicio = document.getElementById('horaInicio').value;
+        const fim = document.getElementById('horaFim').value;
+        if (!inicio || !fim) return;
+        const periodo = `${inicio} - ${fim}`;
+        document.getElementById('periodoTexto').textContent = periodo;
+        document.getElementById('periodoHidden').value = periodo;
+    }
+</script>
+{% endif %}
+
+</body>
+</html>

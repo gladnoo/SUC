@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atas de Reunião</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1; --primary-hover: #4f46e5;
+            --bg: #f1f5f9; --card-bg: #ffffff;
+            --text-main: #1e293b; --text-muted: #64748b;
+            --border: #e2e8f0; --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --danger: #ef4444; --danger-bg: #fee2e2;
+            --success: #22c55e; --sidebar-w: 260px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background: var(--bg); color: var(--text-main); line-height: 1.5; }
+
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.45); backdrop-filter: blur(2px); z-index: 200; }
+        .sidebar-overlay.open { display: block; }
+        .sidebar { position: fixed; top: 0; left: calc(-1 * var(--sidebar-w) - 10px); width: var(--sidebar-w); height: 100vh; background: white; z-index: 201; box-shadow: 4px 0 24px rgba(0,0,0,0.12); transition: left 0.3s cubic-bezier(0.4,0,0.2,1); display: flex; flex-direction: column; border-right: 1px solid var(--border); }
+        .sidebar.open { left: 0; }
+        .sidebar-head { padding: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .sidebar-logo { display: flex; align-items: center; gap: 10px; }
+        .logo-icon-sm { width: 34px; height: 34px; border-radius: 8px; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1rem; }
+        .sidebar-logo span { font-weight: 700; font-size: 0.95rem; }
+        .btn-close-sidebar { background: var(--bg); border: 1px solid var(--border); width: 30px; height: 30px; border-radius: 8px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; color: var(--text-muted); transition: 0.2s; }
+        .btn-close-sidebar:hover { background: var(--danger-bg); color: var(--danger); }
+        .sidebar-nav { flex: 1; overflow-y: auto; padding: 12px 0; }
+        .sidebar-section-label { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; padding: 12px 20px 6px; }
+        .sidebar-item { display: flex; align-items: center; gap: 12px; padding: 10px 20px; text-decoration: none; color: var(--text-main); font-size: 0.88rem; font-weight: 600; transition: 0.15s; cursor: pointer; border: none; background: none; width: 100%; text-align: left; }
+        .sidebar-item:hover { background: #f0f4ff; color: var(--primary); }
+        .sidebar-item.ativo { background: #eef2ff; color: var(--primary); }
+        .sidebar-item .si-icon { font-size: 1.1rem; width: 22px; text-align: center; }
+        .sidebar-divider { height: 1px; background: var(--border); margin: 8px 20px; }
+        .sidebar-footer { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+        .avatar-sm { width: 34px; height: 34px; background: #eef2ff; color: var(--primary); border: 2px solid var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; }
+        .sidebar-footer-info { flex: 1; }
+        .sidebar-footer-info b { font-size: 0.82rem; display: block; }
+        .sidebar-footer-info small { font-size: 0.7rem; color: var(--text-muted); }
+        .btn-logout-sidebar { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; text-decoration: none; }
+        .btn-logout-sidebar:hover { color: var(--danger); }
+
+        header.navbar { background: #fff; padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+        .nav-left { display: flex; align-items: center; gap: 12px; }
+        .btn-menu { background: var(--bg); border: 1.5px solid var(--border); width: 38px; height: 38px; border-radius: 10px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .btn-menu:hover { background: #eef2ff; border-color: var(--primary); color: var(--primary); }
+        .logo-icon { background: var(--primary); color: white; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; }
+        .nav-left h1 { font-size: 1.1rem; margin: 0; }
+        .nav-left p { font-size: 0.85rem; color: var(--text-muted); margin: 0; }
+        .nav-right { display: flex; align-items: center; gap: 12px; }
+        .avatar { width: 40px; height: 40px; background: #eef2ff; color: var(--primary); border: 2px solid var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+        .user-name { font-size: 0.9rem; font-weight: 600; }
+        .user-status { font-size: 0.75rem; color: var(--success); }
+
+        .page-content { max-width: 1000px; margin: 0 auto; padding: 40px; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .page-title { font-size: 1.4rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+        .btn-new { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; font-family: inherit; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
+        .btn-new:hover { background: var(--primary-hover); }
+
+        .search-bar { margin-bottom: 20px; }
+        .search-input { width: 100%; padding: 10px 16px; border: 1.5px solid var(--border); border-radius: 10px; font-family: inherit; font-size: 0.9rem; outline: none; background: white; transition: 0.2s; }
+        .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+
+        .atas-list { display: flex; flex-direction: column; gap: 14px; }
+        .ata-card { background: white; border-radius: 14px; border: 1px solid var(--border); box-shadow: var(--shadow); padding: 0; overflow: hidden; transition: 0.2s; }
+        .ata-card:hover { box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        .ata-header { display: flex; align-items: center; gap: 16px; padding: 18px 22px; cursor: pointer; }
+        .ata-date-badge { background: #eef2ff; color: var(--primary); border-radius: 10px; padding: 8px 14px; text-align: center; flex-shrink: 0; }
+        .ata-date-badge .dia { font-size: 1.4rem; font-weight: 800; display: block; line-height: 1; }
+        .ata-date-badge .mes { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+        .ata-meta { flex: 1; }
+        .ata-titulo { font-size: 0.95rem; font-weight: 700; color: var(--text-main); }
+        .ata-sub { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .ata-chevron { font-size: 1rem; color: var(--text-muted); transition: 0.2s; flex-shrink: 0; }
+        .ata-card.aberta .ata-chevron { transform: rotate(90deg); }
+        .ata-body { display: none; padding: 0 22px 20px; border-top: 1px solid var(--border); }
+        .ata-card.aberta .ata-body { display: block; }
+        .ata-content { padding-top: 16px; }
+        .ata-section { margin-bottom: 14px; }
+        .ata-section-label { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 6px; }
+        .ata-section-text { font-size: 0.85rem; color: var(--text-main); white-space: pre-wrap; line-height: 1.6; }
+        .ata-actions { display: flex; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+        .btn-outline-sm { background: white; border: 1.5px solid var(--border); color: var(--text-muted); padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 0.78rem; font-weight: 700; font-family: inherit; transition: 0.2s; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+        .btn-outline-sm:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-del-sm { background: var(--danger-bg); color: var(--danger); border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.78rem; font-weight: 700; font-family: inherit; }
+
+        .presentes-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+        .chip { background: #f0f4ff; color: var(--primary); border-radius: 20px; padding: 3px 10px; font-size: 0.75rem; font-weight: 700; }
+
+        .empty-state { text-align: center; padding: 60px; color: var(--text-muted); }
+        .empty-state .es-icon { font-size: 3rem; margin-bottom: 12px; }
+
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-overlay.open { display: flex; }
+        .modal-card { background: white; width: 90%; max-width: 600px; border-radius: 16px; padding: 24px; max-height: 90vh; overflow-y: auto; }
+        .modal-card h3 { margin-bottom: 16px; }
+        .modal-card input, .modal-card textarea { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 0.9rem; outline: none; }
+        .modal-card input:focus, .modal-card textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+        .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+        .btn-cancel { background: var(--bg); border: 1px solid var(--border); color: var(--text-muted); padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; font-family: inherit; }
+        .field-label { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; display: block; text-transform: uppercase; letter-spacing: 0.04em; }
+        .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        .toast { position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 10px 20px; border-radius: 30px; font-size: 0.85rem; font-weight: 600; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+        .toast.show { opacity: 1; }
+        .clock-footer { position: fixed; bottom: 20px; right: 20px; background: white; padding: 8px 16px; border-radius: 30px; border: 1px solid var(--border); box-shadow: var(--shadow); font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px; z-index: 99; }
+        .clock-dot { width: 6px; height: 6px; background: var(--primary); border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+    </style>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+        <div class="sidebar-logo"><div class="logo-icon-sm">🌳</div><span>Menu</span></div>
+        <button class="btn-close-sidebar" onclick="closeSidebar()">✕</button>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="sidebar-section-label">Principal</div>
+        <a class="sidebar-item" href="/dashboard"><span class="si-icon">🏠</span> Dashboard</a>
+        <a class="sidebar-item" href="/horas"><span class="si-icon">📅</span> Banco de Horas</a>
+        <a class="sidebar-item" href="/sgrh"><span class="si-icon">📄</span> SGRH</a>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-section-label">Ferramentas</div>
+        <a class="sidebar-item" href="/ocorrencias"><span class="si-icon">📋</span> Solicitações</a>
+        <a class="sidebar-item" href="/equipe"><span class="si-icon">👥</span> Nossa Equipe</a>
+        <a class="sidebar-item" href="/ramais"><span class="si-icon">📞</span> Ramais</a>
+        <a class="sidebar-item" href="/ci"><span class="si-icon">📄</span> CI</a>
+        <div class="sidebar-divider"></div>
+                <div class="sidebar-section-label">Agenda</div>
+        <a class="sidebar-item" href="/calendario_letivo"><span class="si-icon">🗓️</span> Calendário Letivo</a>
+        <a class="sidebar-item ativo" href="/hub"><span class="si-icon">🔗</span> HUB</a>
+        <a class="sidebar-item" href="/eventos"><span class="si-icon">🎯</span> Eventos</a>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-section-label">Conteúdo</div>
+        <a class="sidebar-item" href="/repositorio"><span class="si-icon">📁</span> Repositório</a>
+        <a class="sidebar-item" href="/atas"><span class="si-icon">📝</span> Atas de Reunião</a>
+        <div class="sidebar-section-label">Relatórios</div>
+        <a class="sidebar-item" href="/relatorios"><span class="si-icon">🖨️</span> Relatórios</a>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="avatar-sm">{{ nome[0] }}</div>
+        <div class="sidebar-footer-info"><b>{{ nome }}</b><small>{{ cargo | capitalize }}</small></div>
+        <a href="/logout" class="btn-logout-sidebar">⏻</a>
+    </div>
+</aside>
+
+<header class="navbar">
+    <div class="nav-left">
+        <button class="btn-menu" onclick="openSidebar()">☰</button>
+        <div class="logo-icon">🌳</div>
+        <div><h1>Atas de Reunião</h1><p>Registro e consulta de reuniões</p></div>
+    </div>
+    <div class="nav-right">
+        <div style="display:flex;flex-direction:column;align-items:flex-end">
+            <span class="user-name">{{ nome }}</span>
+            <span class="user-status">Online</span>
+        </div>
+        <div class="avatar">{{ nome[0] }}</div>
+        <a href="/logout" style="font-size:0.8rem;color:var(--text-muted);text-decoration:none">Sair</a>
+    </div>
+</header>
+
+<div class="page-content">
+    <div class="page-header">
+        <div class="page-title">📝 Atas de Reunião</div>
+        <button class="btn-new" onclick="openModal('modal-ata')">+ Nova Ata</button>
+    </div>
+    <div class="search-bar">
+        <input type="text" class="search-input" id="search-input" placeholder="🔍 Buscar por título, pauta ou participantes..." oninput="filtrar()">
+    </div>
+    <div class="atas-list" id="atas-list">
+        <p style="color:var(--text-muted)">Carregando...</p>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modal-ata">
+    <div class="modal-card">
+        <h3>Nova Ata de Reunião</h3>
+        <div class="row-2">
+            <div>
+                <span class="field-label">Título / Assunto</span>
+                <input type="text" id="ata-titulo" placeholder="Ex: Reunião de Planejamento">
+            </div>
+            <div>
+                <span class="field-label">Data da reunião</span>
+                <input type="date" id="ata-data">
+            </div>
+        </div>
+        <span class="field-label">Presentes (separados por vírgula)</span>
+        <input type="text" id="ata-presentes" placeholder="Ex: João, Maria, Carlos">
+        <span class="field-label">Pauta</span>
+        <textarea id="ata-pauta" rows="3" placeholder="Tópicos discutidos..."></textarea>
+        <span class="field-label">Deliberações / Encaminhamentos</span>
+        <textarea id="ata-deliberacoes" rows="3" placeholder="Decisões tomadas e próximos passos..."></textarea>
+        <span class="field-label">Link do documento (opcional)</span>
+        <input type="text" id="ata-link" placeholder="https://drive.google.com/...">
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeModal('modal-ata')">Cancelar</button>
+            <button class="btn-new" onclick="salvarAta()">Salvar Ata</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="clock-footer"><div class="clock-dot"></div><span id="real-time">00:00:00</span></div>
+
+<script>
+    const NOME = "{{ nome }}";
+    const CARGO = "{{ cargo }}";
+    let todasAtas = [];
+
+    function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('open'); }
+    function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.remove('open'); }
+    function openModal(id) { document.getElementById(id).classList.add('open'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+    window.onclick = e => { if(e.target.classList.contains('modal-overlay')) e.target.classList.remove('open'); };
+    document.addEventListener('keydown', e => { if(e.key==='Escape') closeSidebar(); });
+    setInterval(() => { document.getElementById('real-time').textContent = new Date().toLocaleTimeString('pt-BR'); }, 1000);
+    function showToast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+
+    function toggleAta(id) {
+        const card = document.getElementById('ata-' + id);
+        card.classList.toggle('aberta');
+    }
+
+    async function carregarAtas() {
+        const res = await fetch('/atas/dados');
+        todasAtas = await res.json();
+        renderAtas(todasAtas);
+    }
+
+    function renderAtas(lista) {
+        const container = document.getElementById('atas-list');
+        if(!lista.length) { container.innerHTML = '<div class="empty-state"><div class="es-icon">📝</div><p>Nenhuma ata registrada.</p></div>'; return; }
+        const MESES = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+        container.innerHTML = lista.map(a => {
+            const dt = a.data_reuniao ? new Date(a.data_reuniao + 'T12:00') : new Date(a.criado_em);
+            const dia = dt.getDate();
+            const mes = MESES[dt.getMonth()];
+            const presentes = (a.presentes||'').split(',').map(p=>p.trim()).filter(Boolean);
+            const canDel = a.autor === NOME || CARGO === 'chefe';
+            return `<div class="ata-card" id="ata-${a.id}">
+                <div class="ata-header" onclick="toggleAta(${a.id})">
+                    <div class="ata-date-badge"><span class="dia">${dia}</span><span class="mes">${mes}</span></div>
+                    <div class="ata-meta">
+                        <div class="ata-titulo">${a.titulo}</div>
+                        <div class="ata-sub">
+                            <span>✍️ ${a.autor}</span>
+                            ${presentes.length ? `<span>👥 ${presentes.length} presente${presentes.length>1?'s':''}</span>` : ''}
+                        </div>
+                    </div>
+                    <span class="ata-chevron">›</span>
+                </div>
+                <div class="ata-body">
+                    <div class="ata-content">
+                        ${presentes.length ? `<div class="ata-section"><div class="ata-section-label">👥 Presentes</div><div class="presentes-chips">${presentes.map(p=>`<span class="chip">${p}</span>`).join('')}</div></div>` : ''}
+                        ${a.pauta ? `<div class="ata-section"><div class="ata-section-label">📋 Pauta</div><div class="ata-section-text">${a.pauta}</div></div>` : ''}
+                        ${a.deliberacoes ? `<div class="ata-section"><div class="ata-section-label">✅ Deliberações</div><div class="ata-section-text">${a.deliberacoes}</div></div>` : ''}
+                        <div class="ata-actions">
+                            ${a.link ? `<a href="${a.link}" target="_blank" class="btn-outline-sm">🔗 Documento</a>` : ''}
+                            ${canDel ? `<button class="btn-del-sm" onclick="deletarAta(${a.id})">🗑️ Excluir</button>` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function filtrar() {
+        const q = document.getElementById('search-input').value.toLowerCase();
+        renderAtas(todasAtas.filter(a =>
+            a.titulo.toLowerCase().includes(q) ||
+            (a.pauta||'').toLowerCase().includes(q) ||
+            (a.presentes||'').toLowerCase().includes(q)
+        ));
+    }
+
+    async function salvarAta() {
+        const titulo = document.getElementById('ata-titulo').value.trim();
+        const data_reuniao = document.getElementById('ata-data').value;
+        const presentes = document.getElementById('ata-presentes').value.trim();
+        const pauta = document.getElementById('ata-pauta').value.trim();
+        const deliberacoes = document.getElementById('ata-deliberacoes').value.trim();
+        const link = document.getElementById('ata-link').value.trim();
+        if(!titulo) return showToast('⚠️ Título obrigatório');
+        await fetch('/atas', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({titulo,data_reuniao,presentes,pauta,deliberacoes,link}) });
+        closeModal('modal-ata');
+        ['ata-titulo','ata-data','ata-presentes','ata-pauta','ata-deliberacoes','ata-link'].forEach(id => document.getElementById(id).value='');
+        showToast('✅ Ata salva!');
+        await carregarAtas();
+    }
+
+    async function deletarAta(id) {
+        if(!confirm('Excluir esta ata?')) return;
+        await fetch(`/atas/${id}`, {method:'DELETE'});
+        showToast('🗑️ Excluída!');
+        await carregarAtas();
+    }
+
+    document.getElementById('ata-data').valueAsDate = new Date();
+    carregarAtas();
+</script>
+</body>
+</html>

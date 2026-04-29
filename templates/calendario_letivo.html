@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendário Letivo</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg: #f1f5f9;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --sidebar-w: 260px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background: var(--bg); color: var(--text-main); line-height: 1.5; }
+
+        /* ======================== SIDEBAR ======================== */
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.45); backdrop-filter: blur(2px); z-index: 200; }
+        .sidebar-overlay.open { display: block; }
+        .sidebar { position: fixed; top: 0; left: calc(-1 * var(--sidebar-w) - 10px); width: var(--sidebar-w); height: 100vh; background: white; z-index: 201; box-shadow: 4px 0 24px rgba(0,0,0,0.12); transition: left 0.3s cubic-bezier(0.4,0,0.2,1); display: flex; flex-direction: column; border-right: 1px solid var(--border); overflow: hidden; }
+        .sidebar.open { left: 0; }
+        .sidebar-head { padding: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .sidebar-logo { display: flex; align-items: center; gap: 10px; }
+        .sidebar-logo .logo-icon { width: 34px; height: 34px; font-size: 1rem; border-radius: 8px; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; }
+        .sidebar-logo span { font-weight: 700; font-size: 0.95rem; color: var(--text-main); }
+        .btn-close-sidebar { background: var(--bg); border: 1px solid var(--border); width: 30px; height: 30px; border-radius: 8px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; color: var(--text-muted); transition: 0.2s; }
+        .btn-close-sidebar:hover { background: #fee2e2; color: #ef4444; }
+        .sidebar-nav { flex: 1; overflow-y: auto; padding: 12px 0; }
+        .sidebar-section-label { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; padding: 12px 20px 6px; }
+        .sidebar-item { display: flex; align-items: center; gap: 12px; padding: 10px 20px; text-decoration: none; color: var(--text-main); font-size: 0.88rem; font-weight: 600; transition: 0.15s; cursor: pointer; border: none; background: none; width: 100%; text-align: left; }
+        .sidebar-item:hover { background: #f0f4ff; color: var(--primary); }
+        .sidebar-item.ativo { background: #eef2ff; color: var(--primary); }
+        .sidebar-item .si-icon { font-size: 1.1rem; width: 22px; text-align: center; }
+        .sidebar-divider { height: 1px; background: var(--border); margin: 8px 20px; }
+        .sidebar-footer { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+        .sidebar-footer .avatar-sm { width: 34px; height: 34px; background: #eef2ff; color: var(--primary); border: 2px solid var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; }
+        .sidebar-footer-info { flex: 1; }
+        .sidebar-footer-info b { font-size: 0.82rem; display: block; }
+        .sidebar-footer-info small { font-size: 0.7rem; color: var(--text-muted); }
+        .btn-logout-sidebar { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; transition: 0.2s; }
+        .btn-logout-sidebar:hover { color: #ef4444; }
+
+        /* ======================== NAVBAR ======================== */
+        header.navbar { background: #ffffff; padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+        .nav-left { display: flex; align-items: center; gap: 12px; }
+        .btn-menu { background: var(--bg); border: 1.5px solid var(--border); width: 38px; height: 38px; border-radius: 10px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: 0.2s; color: var(--text-main); }
+        .btn-menu:hover { background: #eef2ff; border-color: var(--primary); color: var(--primary); }
+        .logo-icon { background: var(--primary); color: white; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; }
+        .nav-left h1 { font-size: 1.1rem; color: var(--text-main); margin: 0; }
+        .nav-left p { font-size: 0.85rem; color: var(--text-muted); margin: 0; }
+        .nav-right { display: flex; align-items: center; gap: 12px; }
+        .user-profile { display: flex; align-items: center; gap: 12px; }
+        .user-info { display: flex; flex-direction: column; align-items: flex-end; }
+        .user-name { font-size: 0.9rem; font-weight: 600; }
+        .user-status { font-size: 0.75rem; color: #22c55e; }
+        .avatar { width: 40px; height: 40px; background: #eef2ff; color: var(--primary); border: 2px solid var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+
+        /* ======================== CONTENT ======================== */
+        .page-content { max-width: 1400px; margin: 0 auto; padding: 32px 40px; }
+        .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .page-header-left { display: flex; flex-direction: column; gap: 4px; }
+        .page-header h2 { font-size: 1.4rem; font-weight: 700; }
+        .page-header p { font-size: 0.85rem; color: var(--text-muted); }
+        .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: var(--text-muted); margin-bottom: 8px; }
+        .breadcrumb a { color: var(--text-muted); text-decoration: none; transition: 0.15s; }
+        .breadcrumb a:hover { color: var(--primary); }
+        .breadcrumb span { color: #cbd5e1; }
+
+        /* ======================== LEGENDA ======================== */
+        .legenda-wrap {
+            background: white; border: 1px solid var(--border); border-radius: 12px;
+            padding: 14px 18px; margin-bottom: 16px; box-shadow: var(--shadow);
+        }
+        .legenda-titulo {
+            font-size: 0.65rem; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 10px;
+        }
+        .legenda-grid {
+            display: flex; flex-wrap: wrap; gap: 6px 10px;
+        }
+        .leg-item {
+            display: flex; align-items: center; gap: 5px;
+            font-size: 0.72rem; font-weight: 600; color: var(--text-main);
+            background: var(--bg); border-radius: 20px;
+            padding: 3px 9px 3px 5px;
+            border: 1px solid var(--border);
+        }
+        .leg-badge {
+            font-size: 0.62rem; font-weight: 800; border-radius: 4px;
+            padding: 1px 5px; display: inline-block; line-height: 1.4;
+        }
+
+        /* ======================== FILTRO MÊS ======================== */
+        .filtro-meses { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+        .filtro-mes-btn { background: white; border: 1.5px solid var(--border); color: var(--text-muted); padding: 5px 13px; border-radius: 20px; cursor: pointer; font-size: 0.75rem; font-weight: 600; transition: 0.2s; font-family: inherit; }
+        .filtro-mes-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .filtro-mes-btn.ativo { background: var(--primary); border-color: var(--primary); color: white; }
+
+        /* ======================== TABELA ======================== */
+        .cal-wrapper { background: white; border-radius: 16px; border: 1px solid var(--border); box-shadow: var(--shadow); overflow: hidden; }
+        .cal-table-scroll { overflow-x: auto; }
+
+        table.cal-table { border-collapse: collapse; width: 100%; min-width: 1000px; }
+
+        table.cal-table thead tr.days-row th {
+            font-size: 0.66rem; font-weight: 700; text-align: center;
+            color: var(--text-muted); padding: 10px 3px;
+            border-bottom: 2px solid var(--border);
+            min-width: 38px;
+            background: white;
+        }
+        table.cal-table thead tr.days-row th:first-child {
+            min-width: 56px; text-align: left; padding-left: 16px;
+            position: sticky; left: 0; z-index: 20; background: white;
+        }
+
+        table.cal-table tbody tr { border-bottom: 1px solid var(--border); }
+        table.cal-table tbody tr:last-child { border-bottom: none; }
+        table.cal-table tbody tr:hover { background: #fafbff; }
+
+        table.cal-table td.mes-label {
+            font-size: 0.7rem; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 0.08em; color: var(--primary);
+            padding: 0 8px 0 16px; vertical-align: middle;
+            position: sticky; left: 0; background: white; z-index: 5;
+            border-right: 2px solid var(--border); white-space: nowrap;
+        }
+
+        table.cal-table td.dia-cell {
+            text-align: center; vertical-align: middle;
+            padding: 4px 2px; height: 54px; font-size: 0.65rem;
+        }
+
+        .cel-inner {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border-radius: 6px; height: 46px; width: 36px; margin: 0 auto;
+            font-size: 0.62rem; font-weight: 700; line-height: 1.15;
+            transition: transform 0.15s; overflow: hidden; position: relative; cursor: default;
+        }
+        .cel-inner:hover { transform: scale(1.1); z-index: 2; }
+
+        /* ---- Cores por código ---- */
+        .cel-VAZIO  { background: #f8fafc; color: #94a3b8; }
+        .cel-D      { background: #e2e8f0; color: #64748b; }   /* Domingo */
+        .cel-S      { background: #dbeafe; color: #1e40af; }   /* Sábado letivo */
+        .cel-FE     { background: #fef3c7; color: #92400e; }   /* Férias */
+        .cel-F      { background: #fde68a; color: #78350f; }   /* Feriado */
+        .cel-RC     { background: #e0e7ff; color: #3730a3; }   /* Recesso */
+        .cel-AS     { background: #fee2e2; color: #991b1b; }   /* Aulas Suspensas */
+        .cel-RPA    { background: #ede9fe; color: #5b21b6; }   /* Reunião Ped. Adm. */
+        .cel-CPC    { background: #fce7f3; color: #9d174d; }   /* Conselho Participativo */
+        .cel-CF     { background: #fef9c3; color: #713f12; }   /* Conselho Final */
+        .cel-EE     { background: #dcfce7; color: #166534; }   /* Combate Evasão */
+        .cel-SCI    { background: #f0fdf4; color: #15803d; }   /* Sem. Cultural Interesc. */
+        .cel-PAI    { background: #fff7ed; color: #9a3412; }   /* Reunião de Pais (&) */
+        .cel-P      { background: #f1f5f9; color: #475569; }   /* Planejamento */
+        .cel-AF     { background: #ffd6d6; color: #7f1d1d; }   /* Avaliação Final */
+        .cel-DP     { background: #d1fae5; color: #065f46; }   /* Dia do Professor */
+        .cel-RE     { background: #e0f2fe; color: #0c4a6e; }   /* Retorno Especialistas */
+        .cel-SL     { background: #bfdbfe; color: #1e3a8a; }   /* Sábado Letivo */
+        .cel-RP     { background: #cffafe; color: #164e63; }   /* Retorno Professores */
+        .cel-SSE    { background: #ecfccb; color: #3f6212; }   /* Seg. e Saúde Escolar */
+        .cel-EC     { background: #fae8ff; color: #6b21a8; }   /* Eleição Conselhos */
+        .cel-SVM    { background: #ffe4e6; color: #9f1239; }   /* Valorização Mulheres */
+        .cel-EVENTO { background: #e0f2fe; color: #075985; }   /* Evento texto livre */
+
+        .cel-num    { font-size: 0.6rem; font-weight: 500; color: #94a3b8; line-height: 1; margin-bottom: 1px; }
+        .cel-codigo { font-size: 0.62rem; font-weight: 800; line-height: 1; }
+        .cel-desc   { font-size: 0.5rem; font-weight: 600; line-height: 1.15; text-align: center; max-width: 34px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+
+        /* Tooltip */
+        .cel-inner[data-tip] { cursor: pointer; }
+        .cel-inner[data-tip]:hover::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: #1e293b; color: white; font-size: 0.68rem; font-weight: 600; padding: 5px 10px; border-radius: 8px; white-space: nowrap; pointer-events: none; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .cel-inner[data-tip]:hover::before { content: ''; position: absolute; bottom: calc(100% + 2px); left: 50%; transform: translateX(-50%); border: 4px solid transparent; border-top-color: #1e293b; pointer-events: none; z-index: 100; }
+
+        /* Hoje */
+        td.dia-cell.hoje .cel-inner { outline: 2px solid var(--primary); outline-offset: 1px; }
+
+        /* Loading */
+        .cal-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px; gap: 12px; color: var(--text-muted); }
+        .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Clock */
+        .clock-footer { position: fixed; bottom: 20px; right: 20px; background: white; padding: 8px 16px; border-radius: 30px; border: 1px solid var(--border); box-shadow: var(--shadow); font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px; z-index: 99; }
+        .clock-dot { width: 6px; height: 6px; background: var(--primary); border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 10px 20px; border-radius: 30px; font-size: 0.85rem; font-weight: 600; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
+        .toast.show { opacity: 1; }
+
+        @media (max-width: 768px) {
+            .page-content { padding: 20px 16px; }
+            header.navbar { padding: 12px 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+        <div class="sidebar-logo">
+            <div class="logo-icon">🌳</div>
+            <span>Menu</span>
+        </div>
+        <button class="btn-close-sidebar" onclick="closeSidebar()">✕</button>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="sidebar-section-label">Principal</div>
+        <a class="sidebar-item" href="/dashboard"><span class="si-icon">🏠</span> Dashboard</a>
+        <a class="sidebar-item" href="/horas"><span class="si-icon">📅</span> Banco de Horas</a>
+        <a class="sidebar-item" href="/sgrh"><span class="si-icon">📄</span> SGRH</a>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-section-label">Ferramentas</div>
+        <a class="sidebar-item" href="/ocorrencias"><span class="si-icon">📋</span> Solicitações</a>
+        <a class="sidebar-item" href="/equipe"><span class="si-icon">👥</span> Nossa Equipe</a>
+        <a class="sidebar-item" href="/ramais"><span class="si-icon">📞</span> Ramais</a>
+        <a class="sidebar-item" href="/ci"><span class="si-icon">📄</span> CI</a>
+        <div class="sidebar-divider"></div>
+                <div class="sidebar-section-label">Agenda</div>
+        <a class="sidebar-item" href="/calendario_letivo"><span class="si-icon">🗓️</span> Calendário Letivo</a>
+        <a class="sidebar-item ativo" href="/hub"><span class="si-icon">🔗</span> HUB</a>
+        <a class="sidebar-item" href="/evento"><span class="si-icon">🎯</span> Eventos</a>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-section-label">Conteúdo</div>
+        <a class="sidebar-item" href="/repositorio"><span class="si-icon">📁</span> Repositório</a>
+        <a class="sidebar-item" href="/atas"><span class="si-icon">📝</span> Atas de Reunião</a>
+        <div class="sidebar-section-label">Relatórios</div>
+        <a class="sidebar-item" href="/relatorios"><span class="si-icon">🖨️</span> Relatórios</a>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="avatar-sm">{{ nome[0] }}</div>
+        <div class="sidebar-footer-info">
+            <b>{{ nome }}</b>
+            <small>{{ cargo | capitalize }}</small>
+        </div>
+        <a href="/logout" class="btn-logout-sidebar" title="Sair">⏻</a>
+    </div>
+</aside>
+
+<!-- NAVBAR -->
+<header class="navbar">
+    <div class="nav-left">
+        <button class="btn-menu" onclick="openSidebar()">☰</button>
+        <div class="logo-icon">🗓️</div>
+        <div><h1>Calendário Letivo</h1><p>Olá, <strong>{{ nome }}</strong></p></div>
+    </div>
+    <div class="nav-right">
+        <div class="user-profile">
+            <div class="user-info">
+                <span class="user-name">{{ nome }}</span>
+                <span class="user-status">● Online</span>
+            </div>
+            <div class="avatar">{{ nome[0] }}</div>
+        </div>
+        <a href="/logout" style="font-size:0.8rem;color:var(--text-muted);text-decoration:none">Sair</a>
+    </div>
+</header>
+
+<!-- CONTEÚDO -->
+<div class="page-content">
+
+    <div class="page-header">
+        <div class="page-header-left">
+            <div class="breadcrumb">
+                <a href="/dashboard">Dashboard</a>
+                <span>›</span>
+                <span>Agenda</span>
+                <span>›</span>
+                <strong style="color:var(--text-main)">Calendário Letivo</strong>
+            </div>
+            <h2>🗓️ Calendário Letivo</h2>
+            <p style="color:var(--text-muted);font-size:0.85rem">Clique em um dia para ver o detalhe</p>
+        </div>
+    </div>
+
+    <!-- LEGENDA -->
+    <div class="legenda-wrap">
+        <div class="legenda-titulo">Legenda</div>
+        <div class="legenda-grid" id="legenda-grid">
+            <!-- gerado pelo JS -->
+        </div>
+    </div>
+
+    <!-- FILTRO MÊS -->
+    <div class="filtro-meses" id="filtro-meses">
+        <button class="filtro-mes-btn ativo" onclick="filtrarMes('todos', this)">Todos</button>
+        <button class="filtro-mes-btn" onclick="filtrarMes('jan', this)">Jan</button>
+        <button class="filtro-mes-btn" onclick="filtrarMes('fev', this)">Fev</button>
+        <button class="filtro-mes-btn" onclick="filtrarMes('mar', this)">Mar</button>
+        <button class="filtro-mes-btn" onclick="filtrarMes('abr', this)">Abr</button>
+        <button class="filtro-mes-btn" onclick="filtrarMes('mai', this)">Mai</button>
+        <button class="filtro-mes-btn" onclick="filtrarMes('jun', this)">Jun</button>
+        <button class="filtro-mes-btn" onclick="filtrarMes('jul', this)">Jul</button>
+        <button class="filtro-mes-btn" onclick="filtrarMes('ago', this)">Ago</button>
+        <button class="filtro-mes-btn" onclick="filtrarMes('set', this)">Set</button>
+        <button class="filtro-mes-btn" onclick="filtrarMes('out', this)">Out</button>
+        <button class="filtro-mes-btn" onclick="filtrarMes('nov', this)">Nov</button>
+        <button class="filtro-mes-btn" onclick="filtrarMes('dez', this)">Dez</button>
+    </div>
+
+    <!-- TABELA -->
+    <div class="cal-wrapper">
+        <div id="cal-loading" class="cal-loading">
+            <div class="spinner"></div>
+            <span>Carregando calendário letivo...</span>
+        </div>
+        <div class="cal-table-scroll" id="cal-table-wrap" style="display:none">
+            <table class="cal-table" id="cal-table">
+                <thead>
+                    <tr class="days-row" id="days-row">
+                        <th>Mês</th>
+                    </tr>
+                </thead>
+                <tbody id="cal-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<div class="clock-footer"><div class="clock-dot"></div><span id="real-time">00:00:00</span></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const MESES_NOMES = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+const MESES_IDS   = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+
+// ---- Mapa completo de tipos ----
+const TIPOS = {
+    // código: { label, classe }
+    'S':   { label: 'Sábado',                              cls: 'cel-S'  },
+    'D':   { label: 'Domingo',                             cls: 'cel-D'  },
+    'FE':  { label: 'Férias',                              cls: 'cel-FE' },
+    'F':   { label: 'Feriado',                             cls: 'cel-F'  },
+    'RC':  { label: 'Recesso Escolar',                     cls: 'cel-RC' },
+    'AS':  { label: 'Aulas Suspensas',                     cls: 'cel-AS' },
+    'RPA': { label: 'Reunião Pedagógica Administrativa',   cls: 'cel-RPA'},
+    'CPC': { label: 'Conselho Participativo de Classe',    cls: 'cel-CPC'},
+    'CF':  { label: 'Conselho Final',                      cls: 'cel-CF' },
+    'EE':  { label: 'Combate à Evasão Escolar',            cls: 'cel-EE' },
+    'SCI': { label: 'Semana Cultural Interescolar',        cls: 'cel-SCI'},
+    '&':   { label: 'Reunião de Pais',                     cls: 'cel-PAI'},
+    'P':   { label: 'Planejamento',                        cls: 'cel-P'  },
+    'AF':  { label: 'Avaliação Final',                     cls: 'cel-AF' },
+    'DP':  { label: 'Dia do Professor',                    cls: 'cel-DP' },
+    'RE':  { label: 'Retorno dos Especialistas',           cls: 'cel-RE' },
+    'SL':  { label: 'Sábado Letivo',                       cls: 'cel-SL' },
+    'RP':  { label: 'Retorno dos Professores',             cls: 'cel-RP' },
+    'SSE': { label: 'Seg. e Saúde nas Escolas',            cls: 'cel-SSE'},
+    'EC':  { label: 'Eleição dos Conselhos Escolares',     cls: 'cel-EC' },
+    'SVM': { label: 'Semana de Valorização das Mulheres',  cls: 'cel-SVM'},
+};
+
+// ---- Gera legenda ----
+(function buildLegenda() {
+    const grid = document.getElementById('legenda-grid');
+
+    // Dia letivo (vazio)
+    const itemLetivo = document.createElement('div');
+    itemLetivo.className = 'leg-item';
+    itemLetivo.innerHTML = `<span class="leg-badge" style="background:#f8fafc;color:#64748b;border:1px solid #e2e8f0">—</span> Dia Letivo`;
+    grid.appendChild(itemLetivo);
+
+    Object.entries(TIPOS).forEach(([cod, info]) => {
+        const el = document.createElement('div');
+        el.className = 'leg-item';
+        // Pega as cores da classe CSS via inline para o badge
+        const styleMap = {
+            'cel-S':   'background:#dbeafe;color:#1e40af',
+            'cel-D':   'background:#e2e8f0;color:#64748b',
+            'cel-FE':  'background:#fef3c7;color:#92400e',
+            'cel-F':   'background:#fde68a;color:#78350f',
+            'cel-RC':  'background:#e0e7ff;color:#3730a3',
+            'cel-AS':  'background:#fee2e2;color:#991b1b',
+            'cel-RPA': 'background:#ede9fe;color:#5b21b6',
+            'cel-CPC': 'background:#fce7f3;color:#9d174d',
+            'cel-CF':  'background:#fef9c3;color:#713f12',
+            'cel-EE':  'background:#dcfce7;color:#166534',
+            'cel-SCI': 'background:#f0fdf4;color:#15803d',
+            'cel-PAI': 'background:#fff7ed;color:#9a3412',
+            'cel-P':   'background:#f1f5f9;color:#475569',
+            'cel-AF':  'background:#ffd6d6;color:#7f1d1d',
+            'cel-DP':  'background:#d1fae5;color:#065f46',
+            'cel-RE':  'background:#e0f2fe;color:#0c4a6e',
+            'cel-SL':  'background:#bfdbfe;color:#1e3a8a',
+            'cel-RP':  'background:#cffafe;color:#164e63',
+            'cel-SSE': 'background:#ecfccb;color:#3f6212',
+            'cel-EC':  'background:#fae8ff;color:#6b21a8',
+            'cel-SVM': 'background:#ffe4e6;color:#9f1239',
+        };
+        const st = styleMap[info.cls] || '';
+        el.innerHTML = `<span class="leg-badge" style="${st}">${cod}</span> ${info.label}`;
+        grid.appendChild(el);
+    });
+})();
+
+let dadosCalendario = null;
+let mesFiltro = 'todos';
+const hoje = new Date();
+
+// ======================== SIDEBAR ========================
+function openSidebar()  { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('open'); }
+function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.remove('open'); }
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeSidebar(); });
+
+// ======================== CLOCK ========================
+setInterval(() => { document.getElementById('real-time').textContent = new Date().toLocaleTimeString('pt-BR'); }, 1000);
+
+// ======================== TOAST ========================
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ======================== FILTRO ========================
+function filtrarMes(mes, btn) {
+    mesFiltro = mes;
+    document.querySelectorAll('.filtro-mes-btn').forEach(b => b.classList.remove('ativo'));
+    btn.classList.add('ativo');
+    renderTabela();
+}
+
+// ======================== CARREGAR ========================
+async function carregarCalendario() {
+    document.getElementById('cal-loading').style.display = 'flex';
+    document.getElementById('cal-table-wrap').style.display = 'none';
+
+    try {
+        const res  = await fetch('/calendario_letivo/dados');
+        const json = await res.json();
+
+        if(json.erro) {
+            document.getElementById('cal-loading').innerHTML =
+                `<span style="color:#ef4444">⚠️ ${json.erro}</span>`;
+            return;
+        }
+
+        dadosCalendario = json;
+        renderTabela();
+
+    } catch(e) {
+        document.getElementById('cal-loading').innerHTML =
+            `<span style="color:#ef4444">⚠️ Erro ao carregar calendário.</span>`;
+        console.error(e);
+    }
+}
+
+// ======================== RENDER ========================
+function renderTabela() {
+    if(!dadosCalendario) return;
+
+    // Cabeçalho dias 1–31
+    const daysRow = document.getElementById('days-row');
+    daysRow.innerHTML = '<th>Mês</th>';
+    for(let d = 1; d <= 31; d++) {
+        const th = document.createElement('th');
+        th.textContent = d;
+        daysRow.appendChild(th);
+    }
+
+    const tbody = document.getElementById('cal-body');
+    tbody.innerHTML = '';
+
+    dadosCalendario.meses.forEach(mesObj => {
+        if(mesFiltro !== 'todos' && MESES_IDS[mesObj.mes - 1] !== mesFiltro) return;
+
+        const tr = document.createElement('tr');
+        tr.dataset.mes = MESES_IDS[mesObj.mes - 1];
+
+        // Nome do mês
+        const tdMes = document.createElement('td');
+        tdMes.className = 'mes-label';
+        tdMes.textContent = MESES_NOMES[mesObj.mes - 1];
+        tr.appendChild(tdMes);
+
+        const diasNoMes = new Date(hoje.getFullYear(), mesObj.mes, 0).getDate();
+
+        for(let d = 1; d <= 31; d++) {
+            const td = document.createElement('td');
+            td.className = 'dia-cell';
+
+            // Marca hoje
+            if(mesObj.mes === hoje.getMonth() + 1 && d === hoje.getDate()) {
+                td.classList.add('hoje');
+            }
+
+            const inner = document.createElement('div');
+            inner.className = 'cel-inner';
+
+            if(d > diasNoMes) {
+                // Dia inexistente neste mês
+                inner.classList.add('cel-VAZIO');
+                td.appendChild(inner);
+                tr.appendChild(td);
+                continue;
+            }
+
+            const valor = (mesObj.dias[String(d)] || '').trim();
+
+            if(!valor) {
+                // Dia letivo normal
+                inner.classList.add('cel-VAZIO');
+                const num = document.createElement('span');
+                num.className = 'cel-codigo';
+                num.style.cssText = 'font-size:0.68rem;font-weight:500;color:#94a3b8';
+                num.textContent = d;
+                inner.appendChild(num);
+            } else {
+                const tipoUpper = valor.toUpperCase();
+                const tipoInfo  = TIPOS[tipoUpper];
+
+                if(tipoInfo) {
+                    // Código conhecido
+                    inner.classList.add(tipoInfo.cls);
+                    const numEl = document.createElement('span');
+                    numEl.className = 'cel-num';
+                    numEl.textContent = d;
+                    const codEl = document.createElement('span');
+                    codEl.className = 'cel-codigo';
+                    codEl.textContent = tipoUpper === '&' ? '👪' : tipoUpper;
+                    inner.appendChild(numEl);
+                    inner.appendChild(codEl);
+                    inner.setAttribute('data-tip', `${d} – ${tipoInfo.label}`);
+                } else {
+                    // Texto livre = evento
+                    inner.classList.add('cel-EVENTO');
+                    const numEl = document.createElement('span');
+                    numEl.className = 'cel-num';
+                    numEl.textContent = d;
+                    const descEl = document.createElement('span');
+                    descEl.className = 'cel-desc';
+                    descEl.textContent = valor;
+                    inner.appendChild(numEl);
+                    inner.appendChild(descEl);
+                    inner.setAttribute('data-tip', `${d} – ${valor}`);
+                }
+            }
+
+            td.appendChild(inner);
+            tr.appendChild(td);
+        }
+
+        tbody.appendChild(tr);
+    });
+
+    document.getElementById('cal-loading').style.display = 'none';
+    document.getElementById('cal-table-wrap').style.display = 'block';
+}
+
+// ======================== INIT ========================
+carregarCalendario();
+</script>
+</body>
+</html>

@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Repositório</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --primary: #6366f1; --primary-hover: #4f46e5; --primary-light: #eef2ff;
+      --bg: #f1f5f9; --card-bg: #ffffff;
+      --text-main: #1e293b; --text-muted: #64748b;
+      --border: #e2e8f0; --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.07);
+      --shadow-lg: 0 10px 30px rgba(0,0,0,0.10);
+      --danger: #ef4444; --danger-bg: #fee2e2;
+      --success: #22c55e; --success-bg: #dcfce7;
+      --warning: #f59e0b; --warning-bg: #fef3c7;
+      --sidebar-w: 260px; --radius: 14px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text-main); min-height: 100vh; padding-bottom: 80px; }
+
+    /* ── SIDEBAR ── */
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.45); backdrop-filter: blur(2px); z-index: 200; }
+    .sidebar-overlay.open { display: block; }
+    .sidebar { position: fixed; top: 0; left: calc(-1 * var(--sidebar-w) - 10px); width: var(--sidebar-w); height: 100vh; background: white; z-index: 201; box-shadow: 4px 0 24px rgba(0,0,0,0.12); transition: left 0.3s cubic-bezier(0.4,0,0.2,1); display: flex; flex-direction: column; border-right: 1px solid var(--border); }
+    .sidebar.open { left: 0; }
+    .sidebar-head { padding: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .sidebar-logo { display: flex; align-items: center; gap: 10px; }
+    .logo-icon-sm { width: 34px; height: 34px; border-radius: 8px; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1rem; }
+    .sidebar-logo span { font-weight: 700; font-size: 0.95rem; }
+    .btn-close-sidebar { background: var(--bg); border: 1px solid var(--border); width: 30px; height: 30px; border-radius: 8px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; color: var(--text-muted); transition: 0.2s; }
+    .btn-close-sidebar:hover { background: var(--danger-bg); color: var(--danger); }
+    .sidebar-nav { flex: 1; overflow-y: auto; padding: 12px 0; }
+    .sidebar-section-label { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; padding: 12px 20px 6px; }
+    .sidebar-item { display: flex; align-items: center; gap: 12px; padding: 10px 20px; text-decoration: none; color: var(--text-main); font-size: 0.88rem; font-weight: 600; transition: 0.15s; cursor: pointer; border: none; background: none; width: 100%; text-align: left; }
+    .sidebar-item:hover { background: #f0f4ff; color: var(--primary); }
+    .sidebar-item.ativo { background: var(--primary-light); color: var(--primary); }
+    .sidebar-item .si-icon { font-size: 1.1rem; width: 22px; text-align: center; }
+    .sidebar-divider { height: 1px; background: var(--border); margin: 8px 20px; }
+    .sidebar-footer { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+    .avatar-sm { width: 34px; height: 34px; background: var(--primary-light); color: var(--primary); border: 2px solid var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; }
+    .sidebar-footer-info { flex: 1; }
+    .sidebar-footer-info b { font-size: 0.82rem; display: block; }
+    .sidebar-footer-info small { font-size: 0.7rem; color: var(--text-muted); }
+    .btn-logout-sidebar { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; text-decoration: none; }
+    .btn-logout-sidebar:hover { color: var(--danger); }
+
+    /* ── NAVBAR ── */
+    header.navbar { background: white; padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+    .nav-left { display: flex; align-items: center; gap: 12px; }
+    .btn-menu { background: var(--bg); border: 1.5px solid var(--border); width: 38px; height: 38px; border-radius: 10px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: 0.2s; color: var(--text-main); }
+    .btn-menu:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+    .logo-icon { background: var(--primary); color: white; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; }
+    .nav-left h1 { font-size: 1.1rem; margin: 0; }
+    .nav-left p { font-size: 0.85rem; color: var(--text-muted); margin: 0; }
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+    .avatar { width: 40px; height: 40px; background: var(--primary-light); color: var(--primary); border: 2px solid var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+
+    /* ── MAIN ── */
+    .main { max-width: 1200px; margin: 0 auto; padding: 32px 40px; }
+
+    /* ── TOP BAR ── */
+    .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; gap: 16px; flex-wrap: wrap; }
+    .search-row { display: flex; gap: 10px; flex: 1; flex-wrap: wrap; }
+    .search-wrap { display: flex; align-items: center; gap: 10px; background: white; border: 1.5px solid var(--border); border-radius: 10px; padding: 0 14px; flex: 1; min-width: 200px; max-width: 380px; transition: 0.2s; }
+    .search-wrap:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+    .search-wrap span { color: var(--text-muted); font-size: 14px; }
+    .search-wrap input { background: none; border: none; outline: none; color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.88rem; padding: 11px 0; width: 100%; }
+    .search-wrap input::placeholder { color: var(--text-muted); }
+    .filter-select { padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.85rem; outline: none; background: white; color: var(--text-main); cursor: pointer; transition: 0.2s; }
+    .filter-select:focus { border-color: var(--primary); }
+
+    .btn-primary { display: flex; align-items: center; gap: 8px; background: var(--primary); color: #fff; border: none; border-radius: 10px; padding: 11px 20px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.88rem; font-weight: 700; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+    .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,0.35); }
+
+    /* ── STATS ── */
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 28px; }
+    .stat-card { background: white; border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; display: flex; align-items: center; gap: 14px; box-shadow: var(--shadow); }
+    .stat-icon { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
+    .stat-icon.purple { background: var(--primary-light); }
+    .stat-icon.green  { background: var(--success-bg); }
+    .stat-icon.orange { background: var(--warning-bg); }
+    .stat-val { font-size: 1.5rem; font-weight: 800; line-height: 1; }
+    .stat-lbl { font-size: 0.72rem; color: var(--text-muted); margin-top: 3px; font-weight: 600; }
+
+    /* ── CATEGORIA GROUP ── */
+    .cat-group { margin-bottom: 32px; }
+    .cat-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+    .cat-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* ── GRID ── */
+    .docs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+
+    /* ── DOC CARD ── */
+    .doc-card { background: white; border-radius: var(--radius); border: 1.5px solid var(--border); box-shadow: var(--shadow); padding: 16px; display: flex; align-items: center; gap: 14px; transition: all 0.2s; position: relative; text-decoration: none; overflow: hidden; }
+    .doc-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--primary); opacity: 0; transition: opacity 0.2s; }
+    .doc-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); border-color: #c7d2fe; }
+    .doc-card:hover::before { opacity: 1; }
+    .doc-icon { font-size: 2rem; flex-shrink: 0; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: var(--bg); border-radius: 10px; }
+    .doc-info { flex: 1; min-width: 0; }
+    .doc-nome { font-size: 0.85rem; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .doc-cat { font-size: 0.68rem; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; }
+    .doc-meta { font-size: 0.68rem; color: var(--text-muted); margin-top: 3px; }
+    .doc-size { font-size: 0.65rem; color: var(--text-muted); background: var(--bg); border-radius: 20px; padding: 2px 8px; display: inline-block; margin-top: 4px; font-weight: 600; }
+    .btn-del-doc { position: absolute; top: 8px; right: 8px; background: none; border: none; color: #cbd5e1; cursor: pointer; font-size: 0.85rem; opacity: 0; transition: 0.2s; padding: 4px; border-radius: 6px; }
+    .doc-card:hover .btn-del-doc { opacity: 1; }
+    .btn-del-doc:hover { color: var(--danger); background: var(--danger-bg); }
+
+    /* ── EMPTY / LOADING ── */
+    .empty { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+    .empty-icon { font-size: 3rem; display: block; margin-bottom: 16px; opacity: .4; }
+    .empty p { font-size: 0.88rem; font-weight: 600; }
+    .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin .7s linear infinite; margin: 0 auto 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── MODAL ── */
+    .overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.5); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; opacity: 0; pointer-events: none; transition: opacity .2s; }
+    .overlay.open { opacity: 1; pointer-events: all; }
+    .modal { background: white; border: 1px solid var(--border); border-radius: 20px; width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto; box-shadow: var(--shadow-lg); transform: translateY(20px); transition: transform .25s; }
+    .overlay.open .modal { transform: translateY(0); }
+    .modal-banner { background: linear-gradient(135deg, var(--primary) 0%, #818cf8 100%); padding: 24px 28px 20px; }
+    .modal-title { font-size: 1.1rem; font-weight: 800; color: white; }
+    .modal-subtitle { font-size: 0.8rem; color: rgba(255,255,255,0.8); margin-top: 3px; }
+    .modal-head-row { padding: 14px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .modal-head-plain { font-size: 0.95rem; font-weight: 700; }
+    .btn-close { width: 30px; height: 30px; border-radius: 8px; background: var(--bg); border: 1.5px solid var(--border); color: var(--text-muted); cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; transition: all .2s; }
+    .btn-close:hover { color: var(--danger); border-color: var(--danger); background: var(--danger-bg); }
+    .modal-body { padding: 22px 24px; }
+    .modal-footer { padding: 14px 24px 22px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border); }
+
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 0.72rem; font-weight: 700; color: var(--text-muted); margin-bottom: 7px; text-transform: uppercase; letter-spacing: .06em; }
+    .form-group input, .form-group select { width: 100%; background: white; border: 1.5px solid var(--border); border-radius: 10px; padding: 11px 14px; color: var(--text-main); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.9rem; outline: none; transition: border-color .2s, box-shadow .2s; }
+    .form-group input:focus, .form-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+
+    /* ── DROP ZONE ── */
+    .drop-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 32px 20px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--bg); }
+    .drop-zone:hover, .drop-zone.drag-over { border-color: var(--primary); background: var(--primary-light); }
+    .drop-zone .dz-icon { font-size: 2.2rem; margin-bottom: 10px; display: block; }
+    .drop-zone .dz-text { font-size: 0.88rem; font-weight: 700; color: var(--text-muted); }
+    .drop-zone .dz-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+    .drop-zone input[type="file"] { display: none; }
+    .file-preview { display: flex; align-items: center; gap: 12px; background: var(--primary-light); border: 1.5px solid #c7d2fe; border-radius: 10px; padding: 12px 14px; margin-top: 10px; }
+    .file-preview .fp-icon { font-size: 1.5rem; }
+    .file-preview .fp-info { flex: 1; min-width: 0; }
+    .file-preview .fp-name { font-size: 0.85rem; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .file-preview .fp-size { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+    .file-preview .fp-remove { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; transition: 0.2s; }
+    .file-preview .fp-remove:hover { color: var(--danger); }
+
+    /* ── PROGRESS ── */
+    .upload-progress { margin-top: 10px; display: none; }
+    .upload-progress.show { display: block; }
+    .progress-bar-wrap { background: var(--border); border-radius: 20px; height: 6px; overflow: hidden; }
+    .progress-bar { height: 100%; background: linear-gradient(90deg, var(--primary), #818cf8); border-radius: 20px; width: 0%; transition: width 0.3s; }
+    .progress-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-top: 5px; text-align: center; }
+
+    .btn-cancel { background: var(--bg); border: 1.5px solid var(--border); color: var(--text-muted); border-radius: 10px; padding: 10px 18px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all .2s; }
+    .btn-cancel:hover { color: var(--text-main); border-color: var(--text-main); }
+    .btn-save { background: var(--primary); color: #fff; border: none; border-radius: 10px; padding: 10px 22px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all .2s; display: flex; align-items: center; gap: 8px; }
+    .btn-save:hover { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(99,102,241,0.3); }
+    .btn-save:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+    /* ── TOAST ── */
+    .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(20px); background: #1e293b; color: white; border-radius: 30px; padding: 10px 24px; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; box-shadow: 0 8px 32px rgba(0,0,0,.25); opacity: 0; transition: all .3s; pointer-events: none; white-space: nowrap; z-index: 9999; }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    /* ── CLOCK ── */
+    .clock-footer { position: fixed; bottom: 20px; right: 20px; background: white; padding: 8px 16px; border-radius: 30px; border: 1px solid var(--border); box-shadow: var(--shadow); font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px; z-index: 99; }
+    .clock-dot { width: 6px; height: 6px; background: var(--primary); border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+
+    @media (max-width: 700px) {
+      .main { padding: 20px 16px; }
+      header.navbar { padding: 12px 16px; }
+      .docs-grid { grid-template-columns: 1fr; }
+      .stats { grid-template-columns: repeat(2,1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-head">
+    <div class="sidebar-logo"><div class="logo-icon-sm">🌳</div><span>Menu</span></div>
+    <button class="btn-close-sidebar" onclick="closeSidebar()">✕</button>
+  </div>
+  <nav class="sidebar-nav">
+        <div class="sidebar-section-label">Principal</div>
+        <a class="sidebar-item" href="/dashboard"><span class="si-icon">🏠</span> Dashboard</a>
+        <a class="sidebar-item" href="/horas"><span class="si-icon">📅</span> Banco de Horas</a>
+        <a class="sidebar-item" href="/sgrh"><span class="si-icon">📄</span> SGRH</a>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-section-label">Ferramentas</div>
+        <a class="sidebar-item" href="/ocorrencias"><span class="si-icon">📋</span> Solicitações</a>
+        <a class="sidebar-item" href="/equipe"><span class="si-icon">👥</span> Nossa Equipe</a>
+        <a class="sidebar-item" href="/ramais"><span class="si-icon">📞</span> Ramais</a>
+        <a class="sidebar-item" href="/ci"><span class="si-icon">📄</span> CI</a>
+        <div class="sidebar-divider"></div>
+                <div class="sidebar-section-label">Agenda</div>
+        <a class="sidebar-item" href="/calendario_letivo"><span class="si-icon">🗓️</span> Calendário Letivo</a>
+        <a class="sidebar-item ativo" href="/hub"><span class="si-icon">🔗</span> HUB</a>
+        <a class="sidebar-item" href="/eventos"><span class="si-icon">🎯</span> Eventos</a>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-section-label">Conteúdo</div>
+        <a class="sidebar-item" href="/repositorio"><span class="si-icon">📁</span> Repositório</a>
+        <a class="sidebar-item" href="/atas"><span class="si-icon">📝</span> Atas de Reunião</a>
+        <div class="sidebar-section-label">Relatórios</div>
+        <a class="sidebar-item" href="/relatorios"><span class="si-icon">🖨️</span> Relatórios</a>
+    </nav>
+  <div class="sidebar-footer">
+    <div class="avatar-sm">{{ nome[0] }}</div>
+    <div class="sidebar-footer-info"><b>{{ nome }}</b><small>{{ cargo | capitalize }}</small></div>
+    <a href="/logout" class="btn-logout-sidebar">⏻</a>
+  </div>
+</aside>
+
+<!-- NAVBAR -->
+<header class="navbar">
+  <div class="nav-left">
+    <button class="btn-menu" onclick="openSidebar()">☰</button>
+    <div class="logo-icon">🌳</div>
+    <div><h1>📁 Repositório</h1><p>Documentos e arquivos do setor</p></div>
+  </div>
+  <div class="nav-right">
+    <div style="display:flex;flex-direction:column;align-items:flex-end">
+      <span style="font-size:0.9rem;font-weight:600">{{ nome }}</span>
+      <span style="font-size:0.75rem;color:var(--success)">Online</span>
+    </div>
+    <div class="avatar">{{ nome[0] }}</div>
+    <a href="/logout" style="font-size:0.8rem;color:var(--text-muted);text-decoration:none">Sair</a>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div class="search-row">
+      <div class="search-wrap">
+        <span>🔍</span>
+        <input type="text" id="search-input" placeholder="Buscar documentos..." oninput="filtrar()" />
+      </div>
+      <select class="filter-select" id="filter-cat" onchange="filtrar()">
+          <option value="">📂 Todas as categorias</option>
+
+          <!-- Documentos -->
+          <option value="pdf">📄 PDF</option>
+          <option value="docx">📝 DOCX</option>
+          <option value="txt">📃 TXT</option>
+
+          <!-- Planilhas -->
+          <option value="xlsx">📊 XLSX</option>
+          <option value="csv">📈 CSV</option>
+
+          <!-- Apresentações -->
+          <option value="pptx">📽️ PPTX</option>
+          <option value="ppt">🎤 PPT</option>
+
+          <!-- Imagens -->
+          <option value="jpg">🖼️ JPG</option>
+          <option value="png">🌆 PNG</option>
+
+          <!-- Outros tipos -->
+          <option value="zip">🗜️ ZIP / RAR</option>
+          <option value="mp4">🎬 MP4</option>
+          <option value="json">🧠 JSON</option>
+          <option value="html">🌐 HTML</option>
+
+          <!-- fallback -->
+          <option value="outros">📦 Outros</option>
+        </select>
+
+    </div>
+    <button class="btn-primary" onclick="abrirModal()">＋ Adicionar Documento</button>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-icon purple">📁</div>
+      <div><div class="stat-val" id="stat-total">—</div><div class="stat-lbl">Total de Documentos</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green">👤</div>
+      <div><div class="stat-val" id="stat-autores">—</div><div class="stat-lbl">Contribuidores</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon orange">🗂️</div>
+      <div><div class="stat-val" id="stat-cats">—</div><div class="stat-lbl">Categorias</div></div>
+    </div>
+  </div>
+
+  <!-- CONTAINER DOCS -->
+  <div id="docs-container">
+    <div class="empty"><div class="spinner"></div></div>
+  </div>
+
+</main>
+
+<!-- ─── MODAL UPLOAD ─── -->
+<div class="overlay" id="modal-overlay" onclick="fecharModalSeFora(event)">
+  <div class="modal">
+    <div class="modal-banner">
+      <div class="modal-title">📤 Adicionar Documento</div>
+      <div class="modal-subtitle">Faça upload direto para o Google Drive do setor</div>
+    </div>
+    <div class="modal-head-row">
+      <div class="modal-head-plain">Novo Documento</div>
+      <button class="btn-close" onclick="fecharModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Drop Zone -->
+      <div class="form-group">
+        <label>Arquivo *</label>
+        <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event)">
+          <input type="file" id="file-input" onchange="selecionarArquivo(event)" />
+          <span class="dz-icon">☁️</span>
+          <div class="dz-text">Clique ou arraste o arquivo aqui</div>
+          <div class="dz-sub">PDF, DOCX, XLSX, PPTX, imagens... até 50 MB</div>
+        </div>
+        <div class="file-preview" id="file-preview" style="display:none">
+          <span class="fp-icon" id="fp-icon">📄</span>
+          <div class="fp-info">
+            <div class="fp-name" id="fp-name"></div>
+            <div class="fp-size" id="fp-size"></div>
+          </div>
+          <button class="fp-remove" onclick="removerArquivo()" title="Remover">✕</button>
+        </div>
+        <div class="upload-progress" id="upload-progress">
+          <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+          <div class="progress-label" id="progress-label">Enviando...</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Nome do documento *</label>
+        <input type="text" id="f-nome" placeholder="Ex: Formulário de Férias 2025" />
+      </div>
+
+      <div class="form-group">
+        <label>Categoria *</label>
+        <select id="f-categoria">
+          <option value="">📂 Todas as categorias</option>
+
+          <option value="pdf">📄 PDF</option>
+          <option value="docx">📝 DOCX</option>
+          <option value="txt">📃 TXT</option>
+
+          <option value="xlsx">📊 XLSX</option>
+          <option value="csv">📈 CSV</option>
+
+          <option value="pptx">📽️ PPTX</option>
+          <option value="ppt">🎤 PPT</option>
+
+          <option value="jpg">🖼️ JPG</option>
+          <option value="png">🌆 PNG</option>
+
+          <option value="zip">🗜️ ZIP / RAR</option>
+          <option value="mp4">🎬 MP4</option>
+          <option value="json">🧠 JSON</option>
+          <option value="html">🌐 HTML</option>
+
+          <option value="outros">📦 Outros</option>
+        </select>
+
+
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="fecharModal()">Cancelar</button>
+      <button class="btn-save" id="btn-salvar" onclick="salvarDoc()">📤 Enviar Documento</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="clock-footer"><div class="clock-dot"></div><span id="real-time">00:00:00</span></div>
+
+<script>
+  const NOME  = "{{ nome }}";
+  const CARGO = "{{ cargo }}";
+
+  const ICONES = {
+    'Formulários': '📝', 'Manuais': '📖', 'Legislação': '⚖️',
+    'Planilhas': '📊', 'Apresentações': '🎯', 'Outros': '📂'
+  };
+
+  const MIME_ICONS = {
+    'application/pdf': '📕',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '📘',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '📗',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation': '📙',
+    'application/msword': '📘',
+    'image/png': '🖼️', 'image/jpeg': '🖼️', 'image/gif': '🖼️', 'image/webp': '🖼️',
+  };
+
+  let todosDocs  = [];
+  let arquivoSelecionado = null;
+
+  // ── SIDEBAR ──
+  function openSidebar()  { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('open'); }
+  function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.remove('open'); }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeSidebar(); fecharModal(); } });
+  setInterval(() => { document.getElementById('real-time').textContent = new Date().toLocaleTimeString('pt-BR'); }, 1000);
+
+  // ── TOAST ──
+  let toastTimer;
+  function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg; el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+  }
+
+  // ── CARREGAR ──
+  async function carregarDocs() {
+    try {
+      const res = await fetch('/repositorio/dados');
+      todosDocs = await res.json();
+      renderDocs(todosDocs);
+      atualizarStats(todosDocs);
+    } catch {
+      document.getElementById('docs-container').innerHTML =
+        '<div class="empty"><span class="empty-icon">⚠️</span><p>Erro ao carregar documentos.</p></div>';
+    }
+  }
+
+  function atualizarStats(lista) {
+    document.getElementById('stat-total').textContent   = lista.length;
+    document.getElementById('stat-autores').textContent = new Set(lista.map(d => d.autor)).size;
+    document.getElementById('stat-cats').textContent    = new Set(lista.map(d => d.categoria)).size;
+  }
+
+  // ── RENDER ──
+  function renderDocs(lista) {
+    const container = document.getElementById('docs-container');
+    if (!lista.length) {
+      container.innerHTML = '<div class="empty"><span class="empty-icon">📁</span><p>Nenhum documento cadastrado ainda.</p></div>';
+      return;
+    }
+
+    const porCat = {};
+    lista.forEach(d => {
+      const c = d.categoria || 'Outros';
+      if (!porCat[c]) porCat[c] = [];
+      porCat[c].push(d);
+    });
+
+    container.innerHTML = Object.entries(porCat).map(([cat, docs]) => `
+      <div class="cat-group">
+        <div class="cat-label">${ICONES[cat] || '📂'} ${cat} · ${docs.length} ${docs.length === 1 ? 'arquivo' : 'arquivos'}</div>
+        <div class="docs-grid">
+          ${docs.map(d => docCardHTML(d)).join('')}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function docCardHTML(d) {
+    const icon    = MIME_ICONS[d.mime_type] || ICONES[d.categoria] || '📄';
+    const tamanho = d.tamanho ? formatarTamanho(d.tamanho) : '';
+    const data    = d.criado_em ? new Date(d.criado_em).toLocaleDateString('pt-BR') : '';
+    const podeDel = d.autor === NOME || CARGO === 'chefe';
+
+    return `
+      <a href="${escHtml(d.link)}" target="_blank" class="doc-card">
+        <div class="doc-icon">${icon}</div>
+        <div class="doc-info">
+          <div class="doc-nome" title="${escHtml(d.nome)}">${escHtml(d.nome)}</div>
+          <div class="doc-cat">${escHtml(d.categoria)}</div>
+          <div class="doc-meta">por ${escHtml(d.autor)} · ${data}</div>
+          ${tamanho ? `<span class="doc-size">${tamanho}</span>` : ''}
+        </div>
+        ${podeDel ? `<button class="btn-del-doc" onclick="event.preventDefault();deletarDoc(${d.id})" title="Remover">🗑️</button>` : ''}
+      </a>`;
+  }
+
+  // ── FILTRO ──
+  function filtrar() {
+    const q   = document.getElementById('search-input').value.toLowerCase();
+    const cat = document.getElementById('filter-cat').value;
+    const filtrado = todosDocs.filter(d => {
+      const mq = !q || d.nome.toLowerCase().includes(q) || (d.categoria || '').toLowerCase().includes(q) || (d.autor || '').toLowerCase().includes(q);
+      const mc = !cat || d.categoria === cat;
+      return mq && mc;
+    });
+    renderDocs(filtrado);
+  }
+
+  // ── MODAL ──
+  function abrirModal() {
+    removerArquivo();
+    document.getElementById('f-nome').value = '';
+    document.getElementById('modal-overlay').classList.add('open');
+  }
+  function fecharModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+    document.getElementById('upload-progress').classList.remove('show');
+  }
+  function fecharModalSeFora(e) { if (e.target === document.getElementById('modal-overlay')) fecharModal(); }
+
+  // ── DROP ZONE ──
+  function dragOver(e)  { e.preventDefault(); document.getElementById('drop-zone').classList.add('drag-over'); }
+  function dragLeave(e) { document.getElementById('drop-zone').classList.remove('drag-over'); }
+  function dropFile(e)  { e.preventDefault(); dragLeave(e); const f = e.dataTransfer.files[0]; if (f) aplicarArquivo(f); }
+  function selecionarArquivo(e) { const f = e.target.files[0]; if (f) aplicarArquivo(f); }
+
+  function aplicarArquivo(f) {
+    arquivoSelecionado = f;
+    document.getElementById('drop-zone').style.display = 'none';
+    const preview = document.getElementById('file-preview');
+    preview.style.display = 'flex';
+    document.getElementById('fp-icon').textContent  = MIME_ICONS[f.type] || '📄';
+    document.getElementById('fp-name').textContent  = f.name;
+    document.getElementById('fp-size').textContent  = formatarTamanho(f.size);
+    // Preenche o nome automaticamente se estiver vazio
+    const nomeCampo = document.getElementById('f-nome');
+    if (!nomeCampo.value) nomeCampo.value = f.name.replace(/\.[^.]+$/, '');
+  }
+
+  function removerArquivo() {
+    arquivoSelecionado = null;
+    document.getElementById('file-input').value = '';
+    document.getElementById('file-preview').style.display = 'none';
+    document.getElementById('drop-zone').style.display = 'block';
+    document.getElementById('drop-zone').classList.remove('drag-over');
+  }
+
+  // ── SALVAR ──
+  async function salvarDoc() {
+    const btn      = document.getElementById('btn-salvar');
+    const nome     = document.getElementById('f-nome').value.trim();
+    const categoria = document.getElementById('f-categoria').value;
+
+    if (!arquivoSelecionado) return toast('⚠️ Selecione um arquivo.');
+    if (!nome) return toast('⚠️ Informe o nome do documento.');
+
+    btn.disabled    = true;
+    btn.textContent = '⏳ Enviando...';
+
+    // Mostra barra de progresso (simulada, pois fetch não tem progresso nativo)
+    const prog = document.getElementById('upload-progress');
+    const bar  = document.getElementById('progress-bar');
+    const lbl  = document.getElementById('progress-label');
+    prog.classList.add('show');
+    let pct = 0;
+    const interval = setInterval(() => {
+      pct = Math.min(pct + Math.random() * 15, 85);
+      bar.style.width = pct + '%';
+      lbl.textContent = `Enviando para o Drive... ${Math.round(pct)}%`;
+    }, 300);
+
+    const fd = new FormData();
+    fd.append('arquivo',   arquivoSelecionado);
+    fd.append('nome',      nome);
+    fd.append('categoria', categoria);
+
+    try {
+      const res  = await fetch('/repositorio', { method: 'POST', body: fd });
+      const json = await res.json();
+
+      clearInterval(interval);
+      bar.style.width = '100%';
+      lbl.textContent = 'Concluído!';
+
+      if (json.ok) {
+        setTimeout(() => {
+          fecharModal();
+          carregarDocs();
+          toast('✅ Documento enviado com sucesso!');
+        }, 500);
+      } else {
+        toast('❌ ' + (json.erro || 'Erro ao enviar.'));
+        prog.classList.remove('show');
+      }
+    } catch {
+      clearInterval(interval);
+      toast('❌ Erro de conexão.');
+      prog.classList.remove('show');
+    } finally {
+      btn.disabled    = false;
+      btn.textContent = '📤 Enviar Documento';
+    }
+  }
+
+  // ── DELETAR ──
+  async function deletarDoc(id) {
+    if (!confirm('Remover este documento do repositório e do Drive?')) return;
+    try {
+      const res  = await fetch(`/repositorio/${id}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (json.ok) { carregarDocs(); toast('🗑️ Documento removido.'); }
+      else          { toast('❌ ' + (json.erro || 'Erro.')); }
+    } catch { toast('❌ Erro de conexão.'); }
+  }
+
+  // ── UTILS ──
+  function formatarTamanho(bytes) {
+    if (bytes < 1024)        return bytes + ' B';
+    if (bytes < 1048576)     return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1048576).toFixed(1) + ' MB';
+  }
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  carregarDocs();
+</script>
+</body>
+</html>

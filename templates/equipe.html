@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nossa Equipe</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1; --primary-hover: #4f46e5;
+            --bg: #f1f5f9; --card-bg: #ffffff;
+            --text-main: #1e293b; --text-muted: #64748b;
+            --border: #e2e8f0; --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --danger: #ef4444; --danger-bg: #fee2e2;
+            --success: #22c55e; --warning: #f59e0b;
+            --sidebar-w: 260px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background: var(--bg); color: var(--text-main); line-height: 1.5; }
+
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.45); backdrop-filter: blur(2px); z-index: 200; }
+        .sidebar-overlay.open { display: block; }
+        .sidebar { position: fixed; top: 0; left: calc(-1 * var(--sidebar-w) - 10px); width: var(--sidebar-w); height: 100vh; background: white; z-index: 201; box-shadow: 4px 0 24px rgba(0,0,0,0.12); transition: left 0.3s cubic-bezier(0.4,0,0.2,1); display: flex; flex-direction: column; border-right: 1px solid var(--border); overflow: hidden; }
+        .sidebar.open { left: 0; }
+        .sidebar-head { padding: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .sidebar-logo { display: flex; align-items: center; gap: 10px; }
+        .logo-icon-sm { width: 34px; height: 34px; font-size: 1rem; border-radius: 8px; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; }
+        .sidebar-logo span { font-weight: 700; font-size: 0.95rem; }
+        .btn-close-sidebar { background: var(--bg); border: 1px solid var(--border); width: 30px; height: 30px; border-radius: 8px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; color: var(--text-muted); transition: 0.2s; }
+        .btn-close-sidebar:hover { background: var(--danger-bg); color: var(--danger); }
+        .sidebar-nav { flex: 1; overflow-y: auto; padding: 12px 0; }
+        .sidebar-section-label { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; padding: 12px 20px 6px; }
+        .sidebar-item { display: flex; align-items: center; gap: 12px; padding: 10px 20px; text-decoration: none; color: var(--text-main); font-size: 0.88rem; font-weight: 600; transition: 0.15s; cursor: pointer; border: none; background: none; width: 100%; text-align: left; }
+        .sidebar-item:hover { background: #f0f4ff; color: var(--primary); }
+        .sidebar-item.ativo { background: #eef2ff; color: var(--primary); }
+        .sidebar-item .si-icon { font-size: 1.1rem; width: 22px; text-align: center; }
+        .sidebar-divider { height: 1px; background: var(--border); margin: 8px 20px; }
+        .sidebar-footer { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+        .avatar-sm { width: 34px; height: 34px; background: #eef2ff; color: var(--primary); border: 2px solid var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; }
+        .sidebar-footer-info { flex: 1; }
+        .sidebar-footer-info b { font-size: 0.82rem; display: block; }
+        .sidebar-footer-info small { font-size: 0.7rem; color: var(--text-muted); }
+        .btn-logout-sidebar { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; transition: 0.2s; text-decoration: none; }
+        .btn-logout-sidebar:hover { color: var(--danger); }
+
+        header.navbar { background: #fff; padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+        .nav-left { display: flex; align-items: center; gap: 12px; }
+        .btn-menu { background: var(--bg); border: 1.5px solid var(--border); width: 38px; height: 38px; border-radius: 10px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: 0.2s; color: var(--text-main); }
+        .btn-menu:hover { background: #eef2ff; border-color: var(--primary); color: var(--primary); }
+        .logo-icon { background: var(--primary); color: white; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; }
+        .nav-left h1 { font-size: 1.1rem; margin: 0; }
+        .nav-left p { font-size: 0.85rem; color: var(--text-muted); margin: 0; }
+        .nav-right { display: flex; align-items: center; gap: 12px; }
+        .avatar { width: 40px; height: 40px; background: #eef2ff; color: var(--primary); border: 2px solid var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+        .user-name { font-size: 0.9rem; font-weight: 600; }
+        .user-status { font-size: 0.75rem; color: var(--success); }
+
+        .page-content { max-width: 1100px; margin: 0 auto; padding: 40px; }
+
+        .search-bar { display: flex; gap: 12px; margin-bottom: 24px; }
+        .search-input { flex: 1; padding: 10px 16px; border: 1.5px solid var(--border); border-radius: 10px; font-family: inherit; font-size: 0.9rem; outline: none; background: white; transition: 0.2s; }
+        .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+        .filter-select { padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-family: inherit; font-size: 0.85rem; outline: none; background: white; color: var(--text-main); cursor: pointer; }
+        .filter-select:focus { border-color: var(--primary); }
+
+        .equipe-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+        .membro-card { background: white; border-radius: 16px; border: 1px solid var(--border); box-shadow: var(--shadow); padding: 20px; display: flex; flex-direction: column; gap: 14px; transition: 0.2s; }
+        .membro-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        .membro-top { display: flex; align-items: center; gap: 14px; }
+        .membro-avatar { width: 48px; height: 48px; border-radius: 12px; background: #eef2ff; color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; border: 2px solid #c7d2fe; flex-shrink: 0; }
+        .membro-info { flex: 1; min-width: 0; }
+        .membro-nome { font-size: 0.9rem; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .membro-cargo { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+        .membro-status-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .dot-ativo { background: var(--success); box-shadow: 0 0 6px var(--success); }
+        .dot-ferias { background: var(--warning); box-shadow: 0 0 6px var(--warning); }
+        .dot-afastado { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
+        .dot-inativo { background: #cbd5e1; }
+        .membro-email { font-size: 0.78rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .status-badge { font-size: 0.7rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; width: fit-content; white-space: nowrap; }
+        .status-ativo { background: #dcfce7; color: #166534; }
+        .status-ferias { background: #fef3c7; color: #92400e; }
+        .status-afastado { background: #fee2e2; color: #991b1b; }
+        .status-inativo { background: #f1f5f9; color: var(--text-muted); }
+        .membro-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 12px; flex-wrap: wrap; gap: 6px; }
+
+        .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+        @media (max-width: 700px) { .stats-bar { grid-template-columns: repeat(2, 1fr); } }
+        .stat-card { background: white; border-radius: 12px; border: 1px solid var(--border); padding: 16px 20px; display: flex; align-items: center; gap: 12px; }
+        .stat-icon { font-size: 1.6rem; }
+        .stat-val { font-size: 1.4rem; font-weight: 800; color: var(--text-main); }
+        .stat-lbl { font-size: 0.72rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); grid-column: 1/-1; }
+        .empty-state .es-icon { font-size: 3rem; margin-bottom: 12px; }
+        .empty-state p { font-size: 0.9rem; }
+
+        .clock-footer { position: fixed; bottom: 20px; right: 20px; background: white; padding: 8px 16px; border-radius: 30px; border: 1px solid var(--border); box-shadow: var(--shadow); font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px; z-index: 99; }
+        .clock-dot { width: 6px; height: 6px; background: var(--primary); border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.6); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-overlay.open { display: flex; }
+        .modal-card { background: white; width: 90%; max-width: 440px; border-radius: 16px; padding: 24px; }
+        .modal-card h3 { margin-bottom: 16px; }
+        .modal-card select, .modal-card input { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 0.9rem; outline: none; }
+        .modal-card select:focus, .modal-card input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+        .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+        .btn-cancel { background: var(--bg); border: 1px solid var(--border); color: var(--text-muted); padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; font-family: inherit; }
+        .btn-new { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; font-family: inherit; transition: 0.2s; display: flex; align-items: center; gap: 6px; }
+        .btn-new:hover { background: var(--primary-hover); }
+        .field-label { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.04em; }
+        .btn-edit { background: #eef2ff; color: var(--primary); border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: 700; font-family: inherit; transition: 0.2s; }
+        .btn-edit:hover { background: var(--primary); color: white; }
+
+        .toast { position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 10px 20px; border-radius: 30px; font-size: 0.85rem; font-weight: 600; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
+        .toast.show { opacity: 1; }
+
+        .loading-spinner { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 60px; color: var(--text-muted); font-size: 0.9rem; grid-column: 1/-1; }
+    </style>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+        <div class="sidebar-logo">
+            <div class="logo-icon-sm">🌳</div>
+            <span>Menu</span>
+        </div>
+        <button class="btn-close-sidebar" onclick="closeSidebar()">✕</button>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="sidebar-section-label">Principal</div>
+        <a class="sidebar-item" href="/dashboard"><span class="si-icon">🏠</span> Dashboard</a>
+        <a class="sidebar-item" href="/horas"><span class="si-icon">📅</span> Banco de Horas</a>
+        <a class="sidebar-item" href="/sgrh"><span class="si-icon">📄</span> SGRH</a>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-section-label">Ferramentas</div>
+        <a class="sidebar-item" href="/ocorrencias"><span class="si-icon">📋</span> Solicitações</a>
+        <a class="sidebar-item" href="/equipe"><span class="si-icon">👥</span> Nossa Equipe</a>
+        <a class="sidebar-item" href="/ramais"><span class="si-icon">📞</span> Ramais</a>
+        <a class="sidebar-item" href="/ci"><span class="si-icon">📄</span> CI</a>
+        <div class="sidebar-divider"></div>
+                <div class="sidebar-section-label">Agenda</div>
+        <a class="sidebar-item" href="/calendario_letivo"><span class="si-icon">🗓️</span> Calendário Letivo</a>
+        <a class="sidebar-item ativo" href="/hub"><span class="si-icon">🔗</span> HUB</a>
+        <a class="sidebar-item" href="/eventos"><span class="si-icon">🎯</span> Eventos</a>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-section-label">Conteúdo</div>
+        <a class="sidebar-item" href="/repositorio"><span class="si-icon">📁</span> Repositório</a>
+        <a class="sidebar-item" href="/atas"><span class="si-icon">📝</span> Atas de Reunião</a>
+        <div class="sidebar-section-label">Relatórios</div>
+        <a class="sidebar-item" href="/relatorios"><span class="si-icon">🖨️</span> Relatórios</a>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="avatar-sm">{{ nome[0] }}</div>
+        <div class="sidebar-footer-info">
+            <b>{{ nome }}</b>
+            <small>{{ cargo | capitalize }}</small>
+        </div>
+        <a href="/logout" class="btn-logout-sidebar" title="Sair">⏻</a>
+    </div>
+</aside>
+
+<header class="navbar">
+    <div class="nav-left">
+        <button class="btn-menu" onclick="openSidebar()">☰</button>
+        <div class="logo-icon">🌳</div>
+        <div><h1>Nossa Equipe</h1><p>Membros do setor</p></div>
+    </div>
+    <div class="nav-right">
+        <div style="display:flex;flex-direction:column;align-items:flex-end">
+            <span class="user-name">{{ nome }}</span>
+            <span class="user-status">Online</span>
+        </div>
+        <div class="avatar">{{ nome[0] }}</div>
+        <a href="/logout" style="font-size:0.8rem;color:var(--text-muted);text-decoration:none">Sair</a>
+    </div>
+</header>
+
+<div class="page-content">
+    <div class="stats-bar">
+        <div class="stat-card"><span class="stat-icon">👥</span><div><div class="stat-val" id="stat-total">—</div><div class="stat-lbl">Total</div></div></div>
+        <div class="stat-card"><span class="stat-icon">🟢</span><div><div class="stat-val" id="stat-ativos">—</div><div class="stat-lbl">Ativos</div></div></div>
+        <div class="stat-card"><span class="stat-icon">🌴</span><div><div class="stat-val" id="stat-ferias">—</div><div class="stat-lbl">Férias</div></div></div>
+        <div class="stat-card"><span class="stat-icon">⚠️</span><div><div class="stat-val" id="stat-afastados">—</div><div class="stat-lbl">Afastados</div></div></div>
+    </div>
+
+    <div class="search-bar">
+        <input type="text" class="search-input" id="search-input" placeholder="🔍 Buscar por nome, cargo ou e-mail..." oninput="filtrarMembros()">
+        <select class="filter-select" id="filter-status" onchange="filtrarMembros()">
+            <option value="">Todos os status</option>
+            <option value="ATIVO">🟢 Ativo</option>
+            <option value="FERIAS">🌴 Férias</option>
+            <option value="AFASTADO">⚠️ Afastado</option>
+            <option value="INATIVO">⚫ Inativo</option>
+        </select>
+    </div>
+
+    <div class="equipe-grid" id="equipe-grid">
+        <div class="loading-spinner">⏳ Carregando equipe...</div>
+    </div>
+</div>
+
+{% if cargo == "chefe" %}
+<div class="modal-overlay" id="modal-edit">
+    <div class="modal-card">
+        <h3>✏️ Editar Membro</h3>
+        <input type="hidden" id="edit-nome">
+        <span class="field-label">Nome</span>
+        <input type="text" id="edit-nome-display" disabled style="background:#f8fafc;color:var(--text-muted)">
+        <span class="field-label">Cargo</span>
+        <input type="text" id="edit-cargo-input" placeholder="Ex: Analista, Técnico...">
+        <span class="field-label">Status</span>
+        <select id="edit-status">
+            <option value="ATIVO">🟢 Ativo</option>
+            <option value="FÉRIAS">🌴 Férias</option>
+            <option value="AFASTADO">⚠️ Afastado</option>
+            <option value="INATIVO">⚫ Inativo</option>
+        </select>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeModal('modal-edit')">Cancelar</button>
+            <button class="btn-new" onclick="salvarEdicao()">💾 Salvar</button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="toast" id="toast"></div>
+<div class="clock-footer"><div class="clock-dot"></div><span id="real-time">00:00:00</span></div>
+
+<script>
+    const CARGO = "{{ cargo }}";
+    const NOME_USUARIO = "{{ nome }}";
+    const SHEET_ID = '1nYgCV6SgPf5PTIIJZLQcM9xfw5L08SNber7ZEDfUWOo';
+
+    // Mapeamento correto das colunas (range B2:I60):
+    // c[0]=NOME, c[1]=EMAIL, c[2]=MATRÍCULA, c[3]=STATUS, c[4]=LINK_CSV, c[5]=PLANILHA SGRH, c[6]=CARGO, c[7]=NASCIMENTO
+    let todosOsMembros = [];
+
+    function openSidebar() { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('open'); }
+    function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.remove('open'); }
+    function openModal(id) { document.getElementById(id).classList.add('open'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+    window.onclick = e => { if(e.target.classList.contains('modal-overlay')) e.target.classList.remove('open'); };
+    document.addEventListener('keydown', e => { if(e.key==='Escape') { closeSidebar(); document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open')); } });
+    setInterval(() => { document.getElementById('real-time').textContent = new Date().toLocaleTimeString('pt-BR'); }, 1000);
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg; t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2800);
+    }
+
+    function getStatusInfo(str) {
+        const s = (str || '').toUpperCase().trim();
+        if (s.includes('FÉRIAS') || s.includes('FERIAS')) return { label: 'Férias', cls: 'status-ferias', dot: 'dot-ferias', emoji: '🌴' };
+        if (s.includes('AFASTADO')) return { label: 'Afastado', cls: 'status-afastado', dot: 'dot-afastado', emoji: '⚠️' };
+        if (s === 'ATIVO') return { label: 'Ativo', cls: 'status-ativo', dot: 'dot-ativo', emoji: '🟢' };
+        return { label: 'Inativo', cls: 'status-inativo', dot: 'dot-inativo', emoji: '⚫' };
+    }
+
+    async function carregarEquipe() {
+        // Range B2:I60 cobre todas as colunas relevantes
+        const URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=FUNCIONARIOS&range=B2:I60`;
+        try {
+            const r = await fetch(URL);
+            const text = await r.text();
+            const data = JSON.parse(text.substr(47).slice(0, -2));
+            const rows = data.table.rows;
+
+            todosOsMembros = rows
+                .filter(r => r.c && r.c[0] && r.c[0].v)
+                .map(r => ({
+                    nome:      r.c[0] ? String(r.c[0].v).trim() : '',   // B = NOME
+                    email:     r.c[1] ? String(r.c[1].v).trim() : '',   // C = EMAIL INSTITUCIONAL
+                    matricula: r.c[2] ? String(r.c[2].v).trim() : '',   // D = MATRÍCULA
+                    status:    r.c[3] ? String(r.c[3].v).trim() : 'INATIVO', // E = STATUS
+                    // F = LINK_CSV (c[4]) — não exibido
+                    // G = PLANILHA SGRH (c[5]) — não exibido
+                    cargo:     r.c[6] ? String(r.c[6].v).trim() : '',   // H = CARGO
+                    // I = NASCIMENTO (c[7]) — não exibido aqui
+                }));
+
+            atualizarStats();
+            renderMembros(todosOsMembros);
+        } catch (e) {
+            console.error('Erro ao carregar equipe:', e);
+            document.getElementById('equipe-grid').innerHTML =
+                '<div class="empty-state"><div class="es-icon">⚠️</div><p>Erro ao carregar dados da equipe.<br>Verifique a conexão com a planilha.</p></div>';
+        }
+    }
+
+    function atualizarStats() {
+        document.getElementById('stat-total').textContent = todosOsMembros.length;
+        document.getElementById('stat-ativos').textContent = todosOsMembros.filter(m => m.status.toUpperCase() === 'ATIVO').length;
+        document.getElementById('stat-ferias').textContent = todosOsMembros.filter(m => m.status.toUpperCase().includes('FÉRIAS') || m.status.toUpperCase().includes('FERIAS')).length;
+        document.getElementById('stat-afastados').textContent = todosOsMembros.filter(m => m.status.toUpperCase().includes('AFASTADO')).length;
+    }
+
+    function renderMembros(lista) {
+        const grid = document.getElementById('equipe-grid');
+        if (!lista.length) {
+            grid.innerHTML = '<div class="empty-state"><div class="es-icon">👤</div><p>Nenhum membro encontrado.</p></div>';
+            return;
+        }
+
+        grid.innerHTML = lista.map(m => {
+            const si = getStatusInfo(m.status);
+            const palavras = m.nome.split(' ').filter(Boolean);
+            const ini = (palavras[0]?.[0] || '') + (palavras[1]?.[0] || '');
+            const cargoLabel = m.cargo ? m.cargo.charAt(0).toUpperCase() + m.cargo.slice(1).toLowerCase() : 'Funcionário';
+            const editBtn = CARGO === 'chefe'
+                ? `<button class="btn-edit" onclick="abrirEdicao('${m.nome.replace(/'/g,"\\'")}','${m.cargo.replace(/'/g,"\\'")}','${m.status}')">✏️ Editar</button>`
+                : '';
+
+            return `<div class="membro-card">
+                <div class="membro-top">
+                    <div class="membro-avatar">${ini.toUpperCase()}</div>
+                    <div class="membro-info">
+                        <div class="membro-nome" title="${m.nome}">${m.nome}</div>
+                        <div class="membro-cargo">${cargoLabel}</div>
+                    </div>
+                    <div class="membro-status-dot ${si.dot}" title="${si.label}"></div>
+                </div>
+                ${m.email ? `<div class="membro-email" title="${m.email}">✉️ ${m.email}</div>` : ''}
+                <div class="membro-footer">
+                    <span class="status-badge ${si.cls}">${si.emoji} ${si.label}</span>
+                    <div style="display:flex;align-items:center;gap:8px">
+                        ${editBtn}
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function filtrarMembros() {
+        const q = document.getElementById('search-input').value.toLowerCase().trim();
+        const st = document.getElementById('filter-status').value.toUpperCase();
+        const lista = todosOsMembros.filter(m => {
+            const matchQ = !q ||
+                m.nome.toLowerCase().includes(q) ||
+                m.email.toLowerCase().includes(q) ||
+                m.cargo.toLowerCase().includes(q);
+            const matchSt = !st || m.status.toUpperCase().includes(st);
+            return matchQ && matchSt;
+        });
+        renderMembros(lista);
+    }
+
+    function abrirEdicao(nome, cargo, status) {
+        document.getElementById('edit-nome').value = nome;
+        document.getElementById('edit-nome-display').value = nome;
+        document.getElementById('edit-cargo-input').value = cargo;
+
+        const s = status.toUpperCase();
+        let statusVal = 'INATIVO';
+        if (s === 'ATIVO') statusVal = 'ATIVO';
+        else if (s.includes('FÉRIAS') || s.includes('FERIAS')) statusVal = 'FÉRIAS';
+        else if (s.includes('AFASTADO')) statusVal = 'AFASTADO';
+        document.getElementById('edit-status').value = statusVal;
+
+        openModal('modal-edit');
+    }
+
+    async function salvarEdicao() {
+        const nome   = document.getElementById('edit-nome').value;
+        const cargo  = document.getElementById('edit-cargo-input').value.trim();
+        const status = document.getElementById('edit-status').value;
+
+        const btn = document.querySelector('#modal-edit .btn-new');
+        btn.textContent = 'Salvando...';
+        btn.disabled = true;
+
+        try {
+            const res = await fetch('/equipe/editar-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome, status, cargo })
+            });
+            const data = await res.json();
+            if (res.ok && data.ok) {
+                closeModal('modal-edit');
+                showToast('✅ Alterações salvas!');
+                await carregarEquipe();
+            } else {
+                showToast('❌ ' + (data.erro || 'Erro ao salvar.'));
+            }
+        } catch (e) {
+            showToast('❌ Erro de conexão.');
+        } finally {
+            btn.textContent = '💾 Salvar';
+            btn.disabled = false;
+        }
+    }
+
+    carregarEquipe();
+</script>
+</body>
+</html>

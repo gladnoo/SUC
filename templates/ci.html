@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CITE - Comunicação Interna</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --primary-light: #eef2ff;
+            --bg: #f1f5f9;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            --shadow-lg: 0 10px 30px rgba(0,0,0,0.10);
+            --danger: #ef4444;
+            --danger-bg: #fee2e2;
+            --success: #22c55e;
+            --success-bg: #dcfce7;
+            --warning: #f59e0b;
+            --warning-bg: #fef3c7;
+            --info: #3b82f6;
+            --info-bg: #dbeafe;
+            --sidebar-w: 260px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background: var(--bg); color: var(--text-main); line-height: 1.5; padding-bottom: 100px; }
+
+        /* ── SIDEBAR ── */
+        .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.45); backdrop-filter: blur(2px); z-index: 200; }
+        .sidebar-overlay.open { display: block; }
+        .sidebar { position: fixed; top: 0; left: calc(-1 * var(--sidebar-w) - 10px); width: var(--sidebar-w); height: 100vh; background: white; z-index: 201; box-shadow: 4px 0 24px rgba(0,0,0,0.12); transition: left 0.3s cubic-bezier(0.4,0,0.2,1); display: flex; flex-direction: column; border-right: 1px solid var(--border); }
+        .sidebar.open { left: 0; }
+        .sidebar-head { padding: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .sidebar-logo { display: flex; align-items: center; gap: 10px; }
+        .logo-icon-sm { width: 34px; height: 34px; border-radius: 8px; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1rem; }
+        .sidebar-logo span { font-weight: 700; font-size: 0.95rem; }
+        .btn-close-sidebar { background: var(--bg); border: 1px solid var(--border); width: 30px; height: 30px; border-radius: 8px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; color: var(--text-muted); transition: 0.2s; }
+        .btn-close-sidebar:hover { background: var(--danger-bg); color: var(--danger); }
+        .sidebar-nav { flex: 1; overflow-y: auto; padding: 12px 0; }
+        .sidebar-section-label { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; padding: 12px 20px 6px; }
+        .sidebar-item { display: flex; align-items: center; gap: 12px; padding: 10px 20px; text-decoration: none; color: var(--text-main); font-size: 0.88rem; font-weight: 600; transition: 0.15s; cursor: pointer; border: none; background: none; width: 100%; text-align: left; }
+        .sidebar-item:hover { background: #f0f4ff; color: var(--primary); }
+        .sidebar-item.ativo { background: var(--primary-light); color: var(--primary); }
+        .sidebar-item .si-icon { font-size: 1.1rem; width: 22px; text-align: center; }
+        .sidebar-divider { height: 1px; background: var(--border); margin: 8px 20px; }
+        .sidebar-footer { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+        .avatar-sm { width: 34px; height: 34px; background: var(--primary-light); color: var(--primary); border: 2px solid var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; }
+        .sidebar-footer-info { flex: 1; }
+        .sidebar-footer-info b { font-size: 0.82rem; display: block; }
+        .sidebar-footer-info small { font-size: 0.7rem; color: var(--text-muted); }
+        .btn-logout-sidebar { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; transition: 0.2s; text-decoration: none; }
+        .btn-logout-sidebar:hover { color: var(--danger); }
+
+        /* ── NAVBAR ── */
+        header.navbar { background: white; padding: 15px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+        .nav-left { display: flex; align-items: center; gap: 12px; }
+        .btn-menu { background: var(--bg); border: 1.5px solid var(--border); width: 38px; height: 38px; border-radius: 10px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: 0.2s; color: var(--text-main); }
+        .btn-menu:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+        .logo-icon { background: var(--primary); color: white; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.2rem; }
+        .nav-left h1 { font-size: 1.1rem; margin: 0; }
+        .nav-left p { font-size: 0.85rem; color: var(--text-muted); margin: 0; }
+        .nav-right { display: flex; align-items: center; gap: 12px; }
+        .avatar { width: 40px; height: 40px; background: var(--primary-light); color: var(--primary); border: 2px solid var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+
+        /* ── LAYOUT ── */
+        .page { max-width: 1100px; margin: 0 auto; padding: 36px 40px; display: grid; grid-template-columns: 1fr 460px; gap: 28px; align-items: start; }
+        @media (max-width: 900px) { .page { grid-template-columns: 1fr; padding: 24px 20px; } }
+
+        /* ── FORMULÁRIO ── */
+        .form-card { background: white; border-radius: 20px; border: 1px solid var(--border); box-shadow: var(--shadow-lg); overflow: hidden; }
+        .form-header { background: linear-gradient(135deg, var(--primary) 0%, #818cf8 100%); padding: 28px 32px; color: white; }
+        .form-header h2 { font-size: 1.4rem; font-weight: 800; margin-bottom: 4px; }
+        .form-header p { font-size: 0.85rem; opacity: 0.85; }
+        .form-body { padding: 28px 32px; display: flex; flex-direction: column; gap: 20px; }
+
+        .field-group { display: flex; flex-direction: column; gap: 7px; }
+        .field-label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; display: flex; align-items: center; gap: 6px; }
+        .field-label .req { color: var(--danger); }
+
+        .field-readonly { background: #f8fafc; border: 1.5px solid var(--border); border-radius: 10px; padding: 11px 14px; font-size: 0.9rem; color: var(--text-muted); font-weight: 600; display: flex; align-items: center; gap: 8px; }
+        .field-readonly .badge-user { background: var(--primary-light); color: var(--primary); font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+
+        select.field-input, input.field-input, textarea.field-input {
+            width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 10px;
+            font-family: inherit; font-size: 0.9rem; outline: none; transition: 0.2s;
+            background: white; color: var(--text-main);
+        }
+        select.field-input:focus, input.field-input:focus, textarea.field-input:focus {
+            border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+        }
+        textarea.field-input { resize: vertical; min-height: 90px; }
+
+        .field-hint { font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; gap: 5px; }
+
+        .tipo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .tipo-chip { padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 10px; cursor: pointer; font-size: 0.82rem; font-weight: 600; text-align: left; transition: 0.15s; background: white; font-family: inherit; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
+        .tipo-chip:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+        .tipo-chip.selecionado { border-color: var(--primary); background: var(--primary); color: white; }
+        .tipo-chip .chip-icon { font-size: 1.1rem; }
+
+        .btn-submit { background: var(--primary); color: white; border: none; padding: 14px 24px; border-radius: 12px; font-weight: 700; cursor: pointer; font-family: inherit; font-size: 0.95rem; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; }
+        .btn-submit:hover:not(:disabled) { background: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,0.35); }
+        .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        /* ── HISTÓRICO ── */
+        .historico-card { background: white; border-radius: 20px; border: 1px solid var(--border); box-shadow: var(--shadow); overflow: hidden; }
+        .historico-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .historico-header h3 { font-size: 1rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .hist-count { font-size: 0.75rem; color: var(--text-muted); background: var(--bg); padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+        .historico-lista { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+
+        /* ── CARD DE CI ── */
+        .hist-item {
+            border: 1.5px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+            transition: box-shadow 0.15s, border-color 0.15s;
+        }
+        .hist-item:hover { box-shadow: var(--shadow); border-color: #c7d2fe; }
+
+        /* faixa colorida lateral baseada no status */
+        .hist-item.status-pendente  { border-left: 4px solid var(--warning); }
+        .hist-item.status-deferido  { border-left: 4px solid var(--success); }
+        .hist-item.status-indeferido{ border-left: 4px solid var(--danger); }
+        .hist-item.status-ciente    { border-left: 4px solid var(--info); }
+
+        .hist-body { padding: 14px 16px; }
+        .hist-item-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+        .hist-tipo { font-size: 0.9rem; font-weight: 700; color: var(--text-main); }
+        .hist-data-envio { font-size: 0.68rem; color: var(--text-muted); white-space: nowrap; background: var(--bg); padding: 3px 8px; border-radius: 20px; }
+        .hist-func-tag { font-size: 0.72rem; color: var(--primary); font-weight: 700; background: var(--primary-light); padding: 2px 8px; border-radius: 20px; margin-bottom: 6px; display: inline-block; }
+        .hist-data-ref { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 6px; display: flex; align-items: center; gap: 4px; }
+        .hist-obs { font-size: 0.78rem; color: var(--text-muted); font-style: italic; margin-bottom: 10px; padding: 7px 10px; background: var(--bg); border-radius: 8px; line-height: 1.4; }
+
+        /* status badge inline */
+        .status-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 0.75rem; font-weight: 700;
+            padding: 4px 10px; border-radius: 20px;
+            margin-bottom: 10px;
+        }
+        .status-badge.pendente   { background: var(--warning-bg); color: #92400e; }
+        .status-badge.deferido   { background: var(--success-bg); color: #166534; }
+        .status-badge.indeferido { background: var(--danger-bg);  color: #991b1b; }
+        .status-badge.ciente     { background: var(--info-bg);    color: #1e40af; }
+
+        /* ── AÇÕES DO CHEFE ── */
+        .hist-acoes {
+            border-top: 1px solid var(--border);
+            padding: 10px 16px;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .hist-acoes-label {
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-right: 4px;
+            white-space: nowrap;
+        }
+        .btn-acao {
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1.5px solid transparent;
+            font-family: inherit;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .btn-acao:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+
+        .btn-deferido {
+            background: var(--success-bg);
+            color: #166534;
+            border-color: #86efac;
+        }
+        .btn-deferido:hover:not(:disabled) {
+            background: var(--success);
+            color: white;
+            border-color: var(--success);
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(34,197,94,0.3);
+        }
+        .btn-deferido.ativo {
+            background: var(--success);
+            color: white;
+            border-color: var(--success);
+        }
+
+        .btn-indeferido {
+            background: var(--danger-bg);
+            color: #991b1b;
+            border-color: #fca5a5;
+        }
+        .btn-indeferido:hover:not(:disabled) {
+            background: var(--danger);
+            color: white;
+            border-color: var(--danger);
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(239,68,68,0.3);
+        }
+        .btn-indeferido.ativo {
+            background: var(--danger);
+            color: white;
+            border-color: var(--danger);
+        }
+
+        .btn-ciente {
+            background: var(--info-bg);
+            color: #1e40af;
+            border-color: #93c5fd;
+        }
+        .btn-ciente:hover:not(:disabled) {
+            background: var(--info);
+            color: white;
+            border-color: var(--info);
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(59,130,246,0.3);
+        }
+        .btn-ciente.ativo {
+            background: var(--info);
+            color: white;
+            border-color: var(--info);
+        }
+
+        /* seletor de funcionário (chefe) */
+        .chefe-select-wrap { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; background: #f8fafc; }
+        .chefe-select-label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
+        .chefe-select { flex: 1; padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 10px; font-family: inherit; font-size: 0.88rem; font-weight: 600; color: var(--text-main); background: white; outline: none; cursor: pointer; transition: 0.2s; }
+        .chefe-select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+
+        /* filtros */
+        .chefe-filtro { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; flex-wrap: wrap; }
+        .cf-btn { background: white; border: 1.5px solid var(--border); color: var(--text-muted); padding: 5px 12px; border-radius: 20px; cursor: pointer; font-size: 0.78rem; font-weight: 600; transition: 0.2s; font-family: inherit; }
+        .cf-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .cf-btn.ativo { background: var(--primary); border-color: var(--primary); color: white; }
+
+        /* misc */
+        .btn-ver-mais { width: 100%; padding: 10px; background: var(--bg); border: 1.5px dashed var(--border); border-radius: 10px; color: var(--text-muted); font-size: 0.8rem; font-weight: 700; cursor: pointer; font-family: inherit; transition: 0.2s; margin-top: 2px; }
+        .btn-ver-mais:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
+
+        .hist-empty { padding: 40px 20px; text-align: center; color: var(--text-muted); font-size: 0.85rem; }
+        .hist-empty-icon { font-size: 2.2rem; display: block; margin-bottom: 10px; }
+        .hist-loading { padding: 30px; text-align: center; color: var(--text-muted); font-size: 0.85rem; }
+
+        .clock-footer { position: fixed; bottom: 20px; right: 20px; background: white; padding: 8px 16px; border-radius: 30px; border: 1px solid var(--border); box-shadow: var(--shadow); font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px; z-index: 99; }
+        .clock-dot { width: 6px; height: 6px; background: var(--primary); border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+
+        .toast { position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%); background: #1e293b; color: white; padding: 10px 24px; border-radius: 30px; font-size: 0.85rem; font-weight: 600; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; white-space: nowrap; }
+        .toast.show { opacity: 1; }
+
+        .success-banner { display: none; background: var(--success-bg); border: 1.5px solid var(--success); border-radius: 12px; padding: 14px 18px; color: #166534; font-size: 0.88rem; font-weight: 600; align-items: center; gap: 10px; }
+        .success-banner.show { display: flex; }
+    </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+        <div class="sidebar-logo">
+            <div class="logo-icon-sm">🌳</div>
+            <span>Menu</span>
+        </div>
+        <button class="btn-close-sidebar" onclick="closeSidebar()">✕</button>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="sidebar-section-label">Principal</div>
+        <a class="sidebar-item" href="/dashboard"><span class="si-icon">🏠</span> Dashboard</a>
+        <a class="sidebar-item" href="/horas"><span class="si-icon">📅</span> Banco de Horas</a>
+        <a class="sidebar-item" href="/sgrh"><span class="si-icon">📄</span> SGRH</a>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-section-label">Ferramentas</div>
+        <a class="sidebar-item" href="/ocorrencias"><span class="si-icon">📋</span> Solicitações</a>
+        <a class="sidebar-item" href="/equipe"><span class="si-icon">👥</span> Nossa Equipe</a>
+        <a class="sidebar-item" href="/ramais"><span class="si-icon">📞</span> Ramais</a>
+        <a class="sidebar-item" href="/ci"><span class="si-icon">📄</span> CI</a>
+        <div class="sidebar-divider"></div>
+                <div class="sidebar-section-label">Agenda</div>
+        <a class="sidebar-item" href="/calendario_letivo"><span class="si-icon">🗓️</span> Calendário Letivo</a>
+        <a class="sidebar-item ativo" href="/hub"><span class="si-icon">🔗</span> HUB</a>
+        <a class="sidebar-item" href="/eventos"><span class="si-icon">🎯</span> Eventos</a>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-section-label">Conteúdo</div>
+        <a class="sidebar-item" href="/repositorio"><span class="si-icon">📁</span> Repositório</a>
+        <a class="sidebar-item" href="/atas"><span class="si-icon">📝</span> Atas de Reunião</a>
+        <div class="sidebar-section-label">Relatórios</div>
+        <a class="sidebar-item" href="/relatorios"><span class="si-icon">🖨️</span> Relatórios</a>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="avatar-sm">{{ nome[0] }}</div>
+        <div class="sidebar-footer-info">
+            <b>{{ nome }}</b>
+            <small>{{ cargo | capitalize }}</small>
+        </div>
+        <a href="/logout" class="btn-logout-sidebar" title="Sair">⏻</a>
+    </div>
+</aside>
+
+<!-- NAVBAR -->
+<header class="navbar">
+    <div class="nav-left">
+        <button class="btn-menu" onclick="openSidebar()">☰</button>
+        <div class="logo-icon">🌳</div>
+        <div>
+            <h1>📄 CITE — Comunicação Interna</h1>
+            <p>Registre sua comunicação diretamente na planilha</p>
+        </div>
+    </div>
+    <div class="nav-right">
+        <div style="display:flex;flex-direction:column;align-items:flex-end">
+            <span style="font-size:0.9rem;font-weight:600">{{ nome }}</span>
+            <span style="font-size:0.75rem;color:var(--success)">Online</span>
+        </div>
+        <div class="avatar">{{ nome[0] }}</div>
+        <a href="/logout" style="font-size:0.8rem;color:var(--text-muted);text-decoration:none">Sair</a>
+    </div>
+</header>
+
+<div class="page">
+
+    <!-- FORMULÁRIO -->
+    <div class="form-card">
+        <div class="form-header">
+            <h2>📝 Nova Comunicação</h2>
+            <p>Preencha os campos abaixo. O registro será salvo automaticamente na planilha.</p>
+        </div>
+        <div class="form-body">
+
+            <div class="success-banner" id="success-banner">
+                ✅ CI registrada com sucesso na planilha!
+            </div>
+
+            <div class="field-group">
+                <label class="field-label">👤 Funcionário</label>
+                <div class="field-readonly">
+                    {{ nome }}
+                    <span class="badge-user">Automático</span>
+                </div>
+            </div>
+
+            <div class="field-group">
+                <label class="field-label">📌 Solicitação / Comunicação <span class="req">*</span></label>
+                <div class="tipo-grid">
+                    <button class="tipo-chip" onclick="selecionarTipo(this,'Licença Médica')"><span class="chip-icon">🏥</span> Licença Médica</button>
+                    <button class="tipo-chip" onclick="selecionarTipo(this,'Folga Abonada')"><span class="chip-icon">📝</span> Folga Abonada</button>
+                    <button class="tipo-chip" onclick="selecionarTipo(this,'Folga Horas Excedentes')"><span class="chip-icon">⏱️</span> Folga Horas Excedentes</button>
+                    <button class="tipo-chip" onclick="selecionarTipo(this,'TRE')"><span class="chip-icon">🗳️</span> TRE</button>
+                    <button class="tipo-chip" onclick="selecionarTipo(this,'Outro')"><span class="chip-icon">💬</span> Outro</button>
+                </div>
+                <input type="hidden" id="ci-tipo">
+            </div>
+
+            <div class="field-group">
+                <label class="field-label">📅 Data(s) <span class="req">*</span></label>
+                <input type="text" class="field-input" id="ci-data" placeholder="Ex: 19/01, 20/01">
+                <span class="field-hint">💡 Separe múltiplas datas por vírgula</span>
+            </div>
+
+            <div class="field-group">
+                <label class="field-label">💬 Observações</label>
+                <textarea class="field-input" id="ci-obs" placeholder="Informações adicionais (opcional)..."></textarea>
+            </div>
+
+            <button class="btn-submit" id="btn-submit" onclick="enviarCI()">
+                <span id="btn-text">📤 Enviar Comunicação</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- HISTÓRICO -->
+    <div class="historico-card">
+        <div class="historico-header">
+            <h3>🕒 {{ 'Todas as CIs' if cargo == 'chefe' else 'Minhas CIs' }}</h3>
+            <span class="hist-count" id="hist-count">—</span>
+        </div>
+
+        {% if cargo == 'chefe' %}
+        <div class="chefe-select-wrap">
+            <span class="chefe-select-label">👤 Funcionário:</span>
+            <select class="chefe-select" id="chefe-func-select" onchange="onFuncionarioChange()">
+                <option value="">— Selecione —</option>
+                {% for f in funcionarios %}
+                <option value="{{ f.NOME }}">{{ f.NOME }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="chefe-filtro" id="chefe-filtros" style="display:none">
+            <button class="cf-btn ativo" onclick="setFiltroChefe('todos', this)">Todos</button>
+            <button class="cf-btn" onclick="setFiltroChefe('Deferido', this)">✅ Deferido</button>
+            <button class="cf-btn" onclick="setFiltroChefe('Indeferido', this)">❌ Indeferido</button>
+            <button class="cf-btn" onclick="setFiltroChefe('Ciente', this)">🔵 Ciente</button>
+            <button class="cf-btn" onclick="setFiltroChefe('pendente', this)">⏳ Pendente</button>
+        </div>
+        {% endif %}
+
+        <div class="historico-lista" id="historico-lista">
+            <p class="hist-loading">⏳ Carregando histórico...</p>
+        </div>
+    </div>
+</div>
+
+<div class="clock-footer"><div class="clock-dot"></div><span id="real-time">00:00:00</span></div>
+<div class="toast" id="toast"></div>
+
+<script>
+    const NOME  = "{{ nome }}";
+    const CARGO = "{{ cargo }}";
+
+    let filtroChefe = 'todos';
+    let todasCIs    = [];
+
+    // ── sidebar/utils ──
+    function openSidebar()  { document.getElementById('sidebar').classList.add('open'); document.getElementById('sidebar-overlay').classList.add('open'); }
+    function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('sidebar-overlay').classList.remove('open'); }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSidebar(); });
+    setInterval(() => { document.getElementById('real-time').textContent = new Date().toLocaleTimeString('pt-BR'); }, 1000);
+
+    function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg; t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3200);
+    }
+
+    function selecionarTipo(el, tipo) {
+        document.querySelectorAll('.tipo-chip').forEach(c => c.classList.remove('selecionado'));
+        el.classList.add('selecionado');
+        document.getElementById('ci-tipo').value = tipo;
+    }
+
+    // ── enviar CI ──
+    async function enviarCI() {
+        const tipo = document.getElementById('ci-tipo').value;
+        const data = document.getElementById('ci-data').value.trim();
+        const obs  = document.getElementById('ci-obs').value.trim();
+
+        if (!tipo) { showToast('⚠️ Selecione o tipo de comunicação'); return; }
+        if (!data) { showToast('⚠️ Informe a data'); return; }
+
+        const btn = document.getElementById('btn-submit');
+        const txt = document.getElementById('btn-text');
+        btn.disabled = true;
+        txt.textContent = '⏳ Enviando...';
+
+        try {
+            const res  = await fetch('/ci/enviar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tipo, data, obs })
+            });
+            const json = await res.json();
+
+            if (res.ok && json.ok) {
+                document.getElementById('ci-tipo').value = '';
+                document.getElementById('ci-data').value = '';
+                document.getElementById('ci-obs').value  = '';
+                document.querySelectorAll('.tipo-chip').forEach(c => c.classList.remove('selecionado'));
+                const banner = document.getElementById('success-banner');
+                banner.classList.add('show');
+                setTimeout(() => banner.classList.remove('show'), 4000);
+                const funcSel = CARGO === 'chefe'
+                    ? document.getElementById('chefe-func-select')?.value
+                    : null;
+                await carregarHistorico(funcSel);
+            } else {
+                showToast('❌ ' + (json.erro || 'Erro ao enviar.'));
+            }
+        } catch (e) {
+            showToast('❌ Erro de conexão com o servidor.');
+            console.error(e);
+        } finally {
+            btn.disabled = false;
+            txt.textContent = '📤 Enviar Comunicação';
+        }
+    }
+
+    // ── devolutiva (apenas chefe) ──
+    async function marcarDevolutiva(carimbo, devolutiva, btn) {
+        // usa o funcionário selecionado no dropdown (fonte confiável)
+        const funcionario = document.getElementById('chefe-func-select')?.value || '';
+        if (!funcionario) { showToast('⚠️ Selecione um funcionário primeiro'); return; }
+
+        const acoes = btn.closest('.hist-acoes');
+        acoes.querySelectorAll('.btn-acao').forEach(b => b.disabled = true);
+
+        try {
+            const res  = await fetch('/ci/devolutiva', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ carimbo, funcionario, devolutiva })
+            });
+            const json = await res.json();
+
+            if (res.ok && json.ok) {
+                showToast(`✅ Marcado como "${devolutiva}" com sucesso!`);
+                await carregarHistorico(funcionario);
+            } else {
+                showToast('❌ ' + (json.erro || 'Erro ao salvar.'));
+                acoes.querySelectorAll('.btn-acao').forEach(b => b.disabled = false);
+            }
+        } catch (e) {
+            showToast('❌ Erro de conexão.');
+            acoes.querySelectorAll('.btn-acao').forEach(b => b.disabled = false);
+            console.error(e);
+        }
+    }
+
+    // ── histórico ──
+    async function carregarHistorico(nomeFuncionario) {
+        const lista = document.getElementById('historico-lista');
+        lista.innerHTML = '<p class="hist-loading">⏳ Carregando...</p>';
+
+        try {
+            let url = '/ci/historico';
+            if (CARGO === 'chefe' && nomeFuncionario) {
+                url += '?funcionario=' + encodeURIComponent(nomeFuncionario);
+            }
+            const res = await fetch(url);
+            todasCIs  = await res.json();
+            if (!Array.isArray(todasCIs)) todasCIs = [];
+            renderHistorico();
+        } catch (e) {
+            lista.innerHTML = '<p class="hist-loading">⚠️ Erro ao carregar histórico.</p>';
+        }
+    }
+
+    function onFuncionarioChange() {
+        const sel  = document.getElementById('chefe-func-select');
+        const nome = sel.value;
+        const filtrosEl = document.getElementById('chefe-filtros');
+
+        if (!nome) {
+            todasCIs = [];
+            filtrosEl.style.display = 'none';
+            document.getElementById('historico-lista').innerHTML =
+                '<div class="hist-empty"><span class="hist-empty-icon">👆</span>Selecione um funcionário acima.</div>';
+            document.getElementById('hist-count').textContent = '—';
+            return;
+        }
+
+        filtrosEl.style.display = 'flex';
+        filtroChefe = 'todos';
+        limiteVisiveis = 4;
+        document.querySelectorAll('.cf-btn').forEach(b => b.classList.remove('ativo'));
+        document.querySelector('.cf-btn')?.classList.add('ativo');
+        carregarHistorico(nome);
+    }
+
+    function setFiltroChefe(f, btn) {
+        filtroChefe = f;
+        limiteVisiveis = 4;
+        document.querySelectorAll('.cf-btn').forEach(b => b.classList.remove('ativo'));
+        btn.classList.add('ativo');
+        renderHistorico();
+    }
+
+    function getStatusClass(devolutiva) {
+        if (!devolutiva || devolutiva.trim() === '') return 'pendente';
+        const d = devolutiva.toLowerCase();
+        if (d.includes('deferido') && !d.includes('indeferido')) return 'deferido';
+        if (d.includes('indeferido')) return 'indeferido';
+        if (d.includes('ciente')) return 'ciente';
+        return 'pendente';
+    }
+
+    let limiteVisiveis = 4;
+
+    function renderHistorico() {
+        const lista = document.getElementById('historico-lista');
+
+        let exibir = todasCIs;
+        if (filtroChefe !== 'todos') {
+            if (filtroChefe === 'pendente') {
+                exibir = todasCIs.filter(c => !c.devolutiva || c.devolutiva.trim() === '');
+            } else {
+                exibir = todasCIs.filter(c =>
+                    (c.devolutiva || '').toLowerCase().includes(filtroChefe.toLowerCase())
+                );
+            }
+        }
+
+        document.getElementById('hist-count').textContent =
+            `${exibir.length} registro${exibir.length !== 1 ? 's' : ''}`;
+
+        if (!exibir.length) {
+            lista.innerHTML = `<div class="hist-empty"><span class="hist-empty-icon">📭</span>Nenhuma CI encontrada.</div>`;
+            return;
+        }
+
+        const isChefe  = CARGO === 'chefe';
+        const visiveis = exibir.slice(0, limiteVisiveis);
+        const temMais  = exibir.length > limiteVisiveis;
+
+        lista.innerHTML = visiveis.map((c) => {
+            const statusClass = getStatusClass(c.devolutiva);
+            const statusLabels = {
+                pendente:   '⏳ Aguardando resposta',
+                deferido:   `✅ ${c.devolutiva}`,
+                indeferido: `❌ ${c.devolutiva}`,
+                ciente:     `🔵 ${c.devolutiva}`,
+            };
+
+            const funcTag = isChefe
+                ? `<span class="hist-func-tag">👤 ${escHtml(c.funcionario)}</span>`
+                : '';
+
+            const acoesHtml = isChefe ? `
+                <div class="hist-acoes">
+                    <span class="hist-acoes-label">Marcar como:</span>
+                    <button class="btn-acao btn-deferido ${statusClass === 'deferido' ? 'ativo' : ''}"
+                        onclick="marcarDevolutiva('${escHtml(c.carimbo)}','Deferido',this)"
+                        ${statusClass === 'deferido' ? 'disabled' : ''}>✅ Deferido</button>
+                    <button class="btn-acao btn-indeferido ${statusClass === 'indeferido' ? 'ativo' : ''}"
+                        onclick="marcarDevolutiva('${escHtml(c.carimbo)}','Indeferido',this)"
+                        ${statusClass === 'indeferido' ? 'disabled' : ''}>❌ Indeferido</button>
+                    <button class="btn-acao btn-ciente ${statusClass === 'ciente' ? 'ativo' : ''}"
+                        onclick="marcarDevolutiva('${escHtml(c.carimbo)}','Ciente',this)"
+                        ${statusClass === 'ciente' ? 'disabled' : ''}>🔵 Ciente</button>
+                </div>` : '';
+
+            return `
+            <div class="hist-item status-${statusClass}">
+                <div class="hist-body">
+                    <div class="hist-item-head">
+                        <div>
+                            <div class="hist-tipo">${escHtml(c.tipo)}</div>
+                            ${funcTag}
+                        </div>
+                        <span class="hist-data-envio">${escHtml(c.carimbo)}</span>
+                    </div>
+                    ${c.data ? `<div class="hist-data-ref">📅 ${escHtml(c.data)}</div>` : ''}
+                    ${c.obs  ? `<div class="hist-obs">"${escHtml(c.obs)}"</div>` : ''}
+                    <span class="status-badge ${statusClass}">${statusLabels[statusClass]}</span>
+                </div>
+                ${acoesHtml}
+            </div>`;
+        }).join('');
+
+        if (temMais) {
+            const restante = exibir.length - limiteVisiveis;
+            lista.innerHTML += `<button class="btn-ver-mais" onclick="verMais()">↓ Ver mais ${restante} registro${restante !== 1 ? 's' : ''}</button>`;
+        }
+    }
+
+    function verMais() {
+        limiteVisiveis += 4;
+        renderHistorico();
+    }
+
+    // escapa HTML para evitar XSS nos dados da planilha
+    function escHtml(str) {
+        return String(str || '')
+            .replace(/&/g,'&amp;')
+            .replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;')
+            .replace(/"/g,'&quot;')
+            .replace(/'/g,'&#39;');
+    }
+
+    // Inicialização
+    if (CARGO === 'chefe') {
+        // Chefe começa com mensagem de seleção, não carrega nada
+        document.getElementById('historico-lista').innerHTML =
+            '<div class="hist-empty"><span class="hist-empty-icon">👆</span>Selecione um funcionário acima para ver as CIs.</div>';
+        document.getElementById('hist-count').textContent = '—';
+    } else {
+        carregarHistorico(null);
+    }
+</script>
+</body>
+</html> 
