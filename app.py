@@ -9,7 +9,6 @@ from google.oauth2.service_account import Credentials
 from datetime import datetime, timedelta
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
-from flask_mail import Mail, Message
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from reportlab.lib.pagesizes import A4
