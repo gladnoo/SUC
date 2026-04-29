@@ -23,6 +23,7 @@ import atexit
 from io import BytesIO
 import os
 import json
+import threading
 
 
 
@@ -60,7 +61,7 @@ def get_gspread_client():
     cred_json = os.environ.get("GOOGLE_CREDENTIALS")
     cred_dict = json.loads(cred_json)
 
-    creds = Credentials.from_service_account_info(cred_dict)
+    creds = Credentials.from_service_account_info(cred_dict, scopes=scope)
     return gspread.authorize(creds)
 
 def extrair_sheet_e_gid(url):
@@ -2031,18 +2032,23 @@ def ramais_deletar(id):
     return jsonify({"ok": True})
 
 def enviar_email(destinatario, assunto, corpo_html):
-    """Envia email de forma silenciosa — não quebra o sistema se falhar."""
-    try:
-        from flask_mail import Message as MailMessage
-        msg = MailMessage(
-            subject=assunto,
-            recipients=[destinatario],
-            html=corpo_html
-        )
-        mail.send(msg)
-        print(f"✉️ Email enviado para {destinatario}: {assunto}")
-    except Exception as e:
-        print(f"⚠️ Falha ao enviar email para {destinatario}: {e}")
+    def _enviar():
+        with app.app_context():
+            try:
+                from flask_mail import Message as MailMessage
+                msg = MailMessage(
+                    subject=assunto,
+                    recipients=[destinatario],
+                    html=corpo_html
+                )
+                mail.send(msg)
+                print(f"✉️ Email enviado para {destinatario}: {assunto}")
+            except Exception as e:
+                print(f"⚠️ Falha ao enviar email para {destinatario}: {e}")
+    
+    thread = threading.Thread(target=_enviar)
+    thread.daemon = True
+    thread.start()
  
  
 def template_email(titulo, subtitulo, corpo, cor_destaque="#6366f1"):
