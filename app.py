@@ -2022,18 +2022,23 @@ def ramais_deletar(id):
 
 def enviar_email(destinatario, assunto, corpo_html):
     def _enviar():
-        with app.app_context():
-            try:
-                from flask_mail import Message as MailMessage
-                msg = MailMessage(
-                    subject=assunto,
-                    recipients=[destinatario],
-                    html=corpo_html
-                )
-                mail.send(msg)
-                print(f"✉️ Email enviado para {destinatario}: {assunto}")
-            except Exception as e:
-                print(f"⚠️ Falha ao enviar email para {destinatario}: {e}")
+        try:
+            response = requests.post(
+                "https://api.resend.com/emails",
+                headers={
+                    "Authorization": f"Bearer {os.environ.get('RESEND_API_KEY')}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "from": "Sistema CITE <onboarding@resend.dev>",
+                    "to": [destinatario],
+                    "subject": assunto,
+                    "html": corpo_html
+                }
+            )
+            print(f"✉️ Email enviado para {destinatario}: {response.status_code}")
+        except Exception as e:
+            print(f"⚠️ Falha ao enviar email: {e}")
 
     thread = threading.Thread(target=_enviar)
     thread.daemon = True
