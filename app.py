@@ -1487,6 +1487,8 @@ def repositorio_upload():
             resumable=False,
         )
         uploaded = service.files().create(
+            print(f"DRIVE ID: {drive_id}")
+            print(f"DRIVE LINK: {drive_link}")
             body=file_metadata,
             media_body=media,
             fields="id, webViewLink",
