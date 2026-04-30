@@ -1487,8 +1487,6 @@ def repositorio_upload():
             resumable=False,
         )
         uploaded = service.files().create(
-            print(f"DRIVE ID: {drive_id}")
-            print(f"DRIVE LINK: {drive_link}")
             body=file_metadata,
             media_body=media,
             fields="id, webViewLink",
@@ -1497,6 +1495,9 @@ def repositorio_upload():
 
         drive_id   = uploaded.get("id")
         drive_link = uploaded.get("webViewLink", f"https://drive.google.com/file/d/{drive_id}/view")
+        
+        print(f"DRIVE ID: {drive_id}")
+        print(f"DRIVE LINK: {drive_link}")
 
         service.permissions().create(
             fileId=drive_id,
