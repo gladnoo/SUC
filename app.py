@@ -1445,7 +1445,7 @@ def repositorio_dados():
     conn = get_conn()
     c = cursor(conn)
     c.execute("""
-        SELECT id, nome, categoria, drive_link, mime_type, tamanho, autor, criado_em
+        SELECT id, nome, categoria, drive_link AS link, mime_type, tamanho, autor, criado_em
         FROM repositorio
         ORDER BY criado_em DESC
     """)
